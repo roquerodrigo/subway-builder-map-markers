@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Build output (the bundled mod the game loads)
+dist/
+
+# Debug-session logs (npm run debug)
+/logs/
+
+# macOS
+.DS_Store
+
+# JetBrains IDE
+.idea/

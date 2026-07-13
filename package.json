@@ -1,0 +1,32 @@
+{
+  "name": "subway-builder-map-markers",
+  "version": "1.0.0",
+  "description": "Subway Builder mod that adds draggable map markers with a color, an icon and an optional 1 km influence radius, for sketching where future stations could go.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "install-mod": "npm run build && node scripts/install-mod.mjs",
+    "package": "npm run build && node scripts/package-release.mjs",
+    "debug": "node scripts/debug.mjs",
+    "inspect": "node scripts/cdp-eval.mjs",
+    "play": "npm run install-mod && npm run debug"
+  },
+  "author": "Rodrigo Roque",
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.28.1",
+    "eslint": "^9.37.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-perfectionist": "^5.10.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.63.0"
+  }
+}
