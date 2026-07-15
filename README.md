@@ -8,6 +8,12 @@ see a candidate station's walkable catchment.
 It never touches routes, tracks, trains or stations: it only draws its own overlay
 and owns its own state.
 
+![The markers tab: five markers on the map, each with its own color, icon and
+influence circle](docs/images/markers-panel.webp)
+
+![The settings tab: the influence radius, the idle opacity and the display
+toggles](docs/images/settings-panel.webp)
+
 ## Install
 
 Install **Map Markers** from [Railyard](https://subwaybuildermodded.com), or grab the
