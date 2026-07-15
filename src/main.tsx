@@ -20,6 +20,7 @@ function bootstrap(): void {
   const api = window.SubwayBuilderAPI
   if (!api) {
     logger.error('SubwayBuilderAPI not found!')
+
     return
   }
 

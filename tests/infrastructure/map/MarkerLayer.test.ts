@@ -14,9 +14,9 @@ import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
 const OPEN: MarkerLayerView = { opacity: 1, showLabels: true }
 
 interface BadgeParts {
-  root: HTMLElement
   badge: HTMLElement
   label: HTMLElement
+  root: HTMLElement
 }
 
 // jsdom re-serializes colors through its own CSS parser, so a literal hex never
@@ -24,11 +24,24 @@ interface BadgeParts {
 function asCssColor(value: string): string {
   const probe = document.createElement('div')
   probe.style.background = value
+
   return probe.style.background
 }
 
+function badgesOf(map: FakeGlMap): BadgeParts[] {
+  return Array.from(overlayOf(map).children).map((child) => {
+    const root = child as HTMLElement
+
+    return { badge: root.children[0] as HTMLElement, label: root.children[1] as HTMLElement, root }
+  })
+}
+
 function makeMarker(overrides: Partial<Marker> = {}): Marker {
-  return { id: 'alpha', position: [1, 2], color: '#ef4444', icon: 'station', label: 'Alpha', ...overrides }
+  return { color: '#ef4444', icon: 'station', id: 'alpha', label: 'Alpha', position: [1, 2], ...overrides }
+}
+
+function movePointerTo(clientX: number, clientY: number): void {
+  window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, clientY, pointerId: 1 }))
 }
 
 function overlayOf(map: FakeGlMap): HTMLElement {
@@ -36,32 +49,23 @@ function overlayOf(map: FakeGlMap): HTMLElement {
   if (!overlay) {
     throw new Error('the layer drew no overlay')
   }
-  return overlay
-}
 
-function badgesOf(map: FakeGlMap): BadgeParts[] {
-  return Array.from(overlayOf(map).children).map((child) => {
-    const root = child as HTMLElement
-    return { root, badge: root.children[0] as HTMLElement, label: root.children[1] as HTMLElement }
-  })
+  return overlay
 }
 
 function pressOn(target: HTMLElement, init: PointerEventInit = {}): PointerEvent {
   const event = new PointerEvent('pointerdown', {
     bubbles: true,
-    cancelable: true,
     button: 0,
-    pointerId: 1,
+    cancelable: true,
     clientX: 0,
     clientY: 0,
+    pointerId: 1,
     ...init,
   })
   target.dispatchEvent(event)
-  return event
-}
 
-function movePointerTo(clientX: number, clientY: number): void {
-  window.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, clientY, pointerId: 1 }))
+  return event
 }
 
 function releasePointer(type: 'pointercancel' | 'pointerup' = 'pointerup'): void {
@@ -105,6 +109,7 @@ describe('MarkerLayer', () => {
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback): number => {
       const handle = nextFrameHandle++
       frames.set(handle, callback)
+
       return handle
     })
     vi.stubGlobal('cancelAnimationFrame', cancelFrame)
@@ -363,14 +368,15 @@ describe('MarkerLayer', () => {
 
   describe('dragging a badge', () => {
     function renderDraggable(markers: Marker[] = [makeMarker({ position: [1, 2] })], layer = makeLayer()): {
-      layer: MarkerLayer
       badge: HTMLElement
+      layer: MarkerLayer
       root: HTMLElement
     } {
       layer.setInteractive(true)
       layer.render(markers, null, OPEN)
       const parts = badgesOf(map)[0]
-      return { layer, badge: parts.badge, root: parts.root }
+
+      return { badge: parts.badge, layer, root: parts.root }
     }
 
     // A pointer at these client coordinates lands on map pixel (500, 300), which the
@@ -450,10 +456,10 @@ describe('MarkerLayer', () => {
     })
 
     it('leaves the dragged badge where the pointer is when the store re-renders', () => {
-      const { layer, badge, root } = renderDraggable()
+      const { badge, layer, root } = renderDraggable()
       pressOn(badge, { clientX: 120, clientY: 10 })
       movePointerTo(DROP_CLIENT_X, DROP_CLIENT_Y)
-      layer.render([makeMarker({ position: [5, -3], color: '#22c55e' })], 'alpha', OPEN)
+      layer.render([makeMarker({ color: '#22c55e', position: [5, -3] })], 'alpha', OPEN)
       expect(root.style.transform).toBe('translate3d(500px, 300px, 0)')
       expect(badge.style.background).toBe(asCssColor('#22c55e'))
     })
@@ -473,6 +479,7 @@ describe('MarkerLayer', () => {
       const layer = makeLayer()
       layer.setInteractive(true)
       layer.render([makeMarker()], null, OPEN)
+
       return badgesOf(map)[0].badge
     }
 
@@ -510,6 +517,7 @@ describe('MarkerLayer', () => {
       const layer = makeLayer()
       layer.setInteractive(true)
       layer.render([makeMarker()], null, OPEN)
+
       return badgesOf(map)[0].badge
     }
 

@@ -2,16 +2,17 @@ import { MARKER_COLORS } from '@/domain/marker/MarkerPalette'
 import { h } from '@/infrastructure/ui/react'
 
 export interface ColorSwatchesProps {
-  value: string
   onChange: (color: string) => void
+  value: string
 }
 
 // The color palette as a row of round swatches; the current color is ringed.
-export function ColorSwatches({ value, onChange }: ColorSwatchesProps): JSX.Element {
+export function ColorSwatches({ onChange, value }: ColorSwatchesProps): JSX.Element {
   return (
     <div className="flex flex-wrap gap-1.5">
       {MARKER_COLORS.map((color) => {
         const selected = color.toLowerCase() === value.toLowerCase()
+
         return (
           <button
             aria-label={`Choose color ${color}`}

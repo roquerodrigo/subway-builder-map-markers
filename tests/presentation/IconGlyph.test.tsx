@@ -12,6 +12,7 @@ const targetIcon = markerIcon('target')
 
 function renderGlyph(icon: MarkerIcon, props: { color?: string, size?: number, strokeWidth?: number } = {}): SVGSVGElement {
   const { container } = render(<IconGlyph icon={icon} {...props} />)
+
   return container.querySelector('svg') as SVGSVGElement
 }
 

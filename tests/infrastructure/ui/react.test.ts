@@ -13,6 +13,7 @@ async function importShimWith(hostApi: unknown): Promise<typeof import('../../..
   host.SubwayBuilderAPI = hostApi
   try {
     vi.resetModules()
+
     return await import(SHIM_PATH)
   } finally {
     host.SubwayBuilderAPI = original

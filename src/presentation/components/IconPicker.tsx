@@ -3,18 +3,19 @@ import { h } from '@/infrastructure/ui/react'
 import { IconGlyph } from '@/presentation/components/IconGlyph'
 
 export interface IconPickerProps {
-  value: string
   color: string
   onChange: (icon: string) => void
+  value: string
 }
 
 // The icon set as a row of toggle buttons; the current icon is highlighted and
 // tinted with the marker's color.
-export function IconPicker({ value, color, onChange }: IconPickerProps): JSX.Element {
+export function IconPicker({ color, onChange, value }: IconPickerProps): JSX.Element {
   return (
     <div className="flex flex-wrap gap-1.5">
       {MARKER_ICONS.map((icon) => {
         const selected = icon.key === value
+
         return (
           <button
             aria-label={icon.label}

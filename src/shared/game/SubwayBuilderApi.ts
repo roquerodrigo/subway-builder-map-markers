@@ -1,13 +1,13 @@
 export interface FloatingPanelConfig {
-  id: string
-  icon: string
-  tooltip: string
-  title: string
-  defaultWidth?: number
   defaultHeight?: number
-  minWidth?: number
+  defaultWidth?: number
+  icon: string
+  id: string
   minHeight?: number
+  minWidth?: number
   render: (props: { height?: number, width?: number }) => unknown
+  title: string
+  tooltip: string
 }
 
 // The public modding API (window.SubwayBuilderAPI). Only the namespaces/members

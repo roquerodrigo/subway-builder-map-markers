@@ -32,10 +32,10 @@ export interface MarkerLayerView {
 }
 
 interface MarkerElement {
-  root: HTMLDivElement
   badge: HTMLDivElement
   label: HTMLDivElement
   markerId: string
+  root: HTMLDivElement
 }
 
 // Renders each marker as a draggable DOM badge on the map's canvas container —
@@ -119,20 +119,20 @@ export class MarkerLayer {
     const container = document.createElement('div')
     container.className = CONTAINER_CLASS
     Object.assign(container.style, {
+      height: '0',
+      left: '0',
+      // Fading the whole overlay in one place covers badges and labels alike, and
+      // costs nothing per marker.
+      opacity: String(this.opacity),
+      pointerEvents: 'none',
       position: 'absolute',
       top: '0',
-      left: '0',
+      transition: 'opacity 160ms ease',
       width: '0',
-      height: '0',
-      pointerEvents: 'none',
       // Raised above the game's station markers only while interactive (see
       // setInteractive). The container is pointer-events:none, so only the badges
       // themselves intercept — the rest of each station stays clickable.
       zIndex: this.interactive ? Z_INTERACTIVE : Z_IDLE,
-      // Fading the whole overlay in one place covers badges and labels alike, and
-      // costs nothing per marker.
-      opacity: String(this.opacity),
-      transition: 'opacity 160ms ease',
     })
     map.getCanvasContainer().appendChild(container)
     this.container = container
@@ -220,54 +220,55 @@ export class MarkerLayer {
   private createElement(marker: Marker): MarkerElement {
     const root = document.createElement('div')
     Object.assign(root.style, {
+      left: '0',
+      pointerEvents: 'none',
       position: 'absolute',
       top: '0',
-      left: '0',
       willChange: 'transform',
-      pointerEvents: 'none',
     })
 
     const badge = document.createElement('div')
     Object.assign(badge.style, {
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      transform: 'translate(-50%, -50%)',
-      width: `${BADGE_SIZE}px`,
-      height: `${BADGE_SIZE}px`,
-      borderRadius: '50%',
-      border: '2px solid #ffffff',
-      display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      cursor: this.interactive ? 'grab' : 'default',
-      pointerEvents: this.interactive ? 'auto' : 'none',
-      touchAction: 'none',
+      border: '2px solid #ffffff',
+      borderRadius: '50%',
       boxSizing: 'border-box',
+      cursor: this.interactive ? 'grab' : 'default',
+      display: 'flex',
+      height: `${BADGE_SIZE}px`,
+      justifyContent: 'center',
+      left: '0',
+      pointerEvents: this.interactive ? 'auto' : 'none',
+      position: 'absolute',
+      top: '0',
+      touchAction: 'none',
+      transform: 'translate(-50%, -50%)',
       transition: 'box-shadow 120ms ease, transform 120ms ease',
+      width: `${BADGE_SIZE}px`,
     })
 
     const label = document.createElement('div')
     Object.assign(label.style, {
-      position: 'absolute',
-      left: '0',
-      top: `${BADGE_SIZE / 2 + 4}px`,
-      transform: 'translate(-50%, 0)',
-      padding: '1px 6px',
-      borderRadius: '6px',
       background: 'rgba(15, 17, 21, 0.85)',
+      borderRadius: '6px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
       color: '#ffffff',
       font: '600 11px/1.4 system-ui, sans-serif',
-      whiteSpace: 'nowrap',
+      left: '0',
+      padding: '1px 6px',
       pointerEvents: 'none',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+      position: 'absolute',
+      top: `${BADGE_SIZE / 2 + 4}px`,
+      transform: 'translate(-50%, 0)',
+      whiteSpace: 'nowrap',
     })
 
     root.appendChild(badge)
     root.appendChild(label)
 
-    const element: MarkerElement = { root, badge, label, markerId: marker.id }
+    const element: MarkerElement = { badge, label, markerId: marker.id, root }
     badge.addEventListener('pointerdown', (event) => this.beginDrag(event, element))
+
     return element
   }
 

@@ -48,8 +48,10 @@ export class MarkerRepository {
       if (payload) {
         logger.warn('discarding unreadable saved markers for', key)
       }
+
       return []
     }
+
     return payload.markers.map(sanitize).filter((marker): marker is Marker => marker !== null)
   }
 
@@ -75,11 +77,12 @@ function sanitize(value: unknown): Marker | null {
   ) {
     return null
   }
+
   return {
-    id: typeof candidate.id === 'string' ? candidate.id : `m-${Math.random().toString(36).slice(2)}`,
-    position: [position[0], position[1]],
     color: typeof candidate.color === 'string' ? candidate.color : '#3b82f6',
     icon: markerIcon(typeof candidate.icon === 'string' ? candidate.icon : '').key,
+    id: typeof candidate.id === 'string' ? candidate.id : `m-${Math.random().toString(36).slice(2)}`,
     label: typeof candidate.label === 'string' ? candidate.label : '',
+    position: [position[0], position[1]],
   }
 }

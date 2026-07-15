@@ -19,8 +19,10 @@ export function useMarkers(store: MarkerStore): MarkersSnapshot {
   React.useEffect(() => {
     const update = (): void => setSnapshot({ markers: store.all(), selectedId: store.selected() })
     update()
+
     return store.subscribe(update)
   }, [store])
+
   return snapshot
 }
 
@@ -30,7 +32,9 @@ export function usePlacement(controller: MapMarkersController): boolean {
   const [placing, setPlacing] = React.useState<boolean>(() => controller.isPlacing())
   React.useEffect(() => {
     setPlacing(controller.isPlacing())
+
     return controller.onPlacementChange(setPlacing)
   }, [controller])
+
   return placing
 }

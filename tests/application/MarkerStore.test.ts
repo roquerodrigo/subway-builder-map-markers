@@ -17,7 +17,12 @@ function createFixture() {
   const state: GameStateSnapshot = {}
   const session = new GameSession({}, { getState: () => state })
   const repository = new MarkerRepository(createModStorage())
+
   return { repository, state, store: new MarkerStore(repository, session) }
+}
+
+function labelsOf(markers: Marker[]): string[] {
+  return markers.map((marker) => marker.label)
 }
 
 function playing(state: GameStateSnapshot, saveId: null | string, cityCode: null | string): void {
@@ -26,11 +31,7 @@ function playing(state: GameStateSnapshot, saveId: null | string, cityCode: null
 }
 
 function storedMarker(label: string): Marker {
-  return { id: `id-${label}`, position: [-46.6, -23.5], color: '#ef4444', icon: 'station', label }
-}
-
-function labelsOf(markers: Marker[]): string[] {
-  return markers.map((marker) => marker.label)
+  return { color: '#ef4444', icon: 'station', id: `id-${label}`, label, position: [-46.6, -23.5] }
 }
 
 beforeEach(() => {
@@ -102,8 +103,8 @@ describe('MarkerStore', () => {
       const { store } = createFixture()
       const first = store.add([0, 0])
       const second = store.add([1, 1])
-      store.update(first.id, { label: 'Renamed', color: '#000000' })
-      expect(store.all()).toEqual([{ ...first, label: 'Renamed', color: '#000000' }, second])
+      store.update(first.id, { color: '#000000', label: 'Renamed' })
+      expect(store.all()).toEqual([{ ...first, color: '#000000', label: 'Renamed' }, second])
     })
 
     it('ignores an update of an id it does not know', () => {

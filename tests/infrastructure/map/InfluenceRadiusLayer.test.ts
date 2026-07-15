@@ -19,14 +19,18 @@ const RETRY_DELAY_MS = 120
 const MAX_RETRIES = 25
 
 interface Feature {
+  geometry: { coordinates: number[][][] | number[][][][], type: string }
+  properties: { color?: string, role: string }
   type: string
-  properties: { role: string, color?: string }
-  geometry: { type: string, coordinates: number[][][] | number[][][][] }
 }
 
 interface FeatureCollection {
-  type: string
   features: Feature[]
+  type: string
+}
+
+function makeMarker(overrides: Partial<Marker> = {}): Marker {
+  return { color: '#ef4444', icon: 'station', id: 'alpha', label: 'Alpha', position: [-46.6, -23.5], ...overrides }
 }
 
 function makeSettings(overrides: Partial<MarkerSettings> = {}): MarkerSettings {
@@ -39,10 +43,6 @@ function makeSettings(overrides: Partial<MarkerSettings> = {}): MarkerSettings {
     snapToSpacing: false,
     ...overrides,
   }
-}
-
-function makeMarker(overrides: Partial<Marker> = {}): Marker {
-  return { id: 'alpha', position: [-46.6, -23.5], color: '#ef4444', icon: 'station', label: 'Alpha', ...overrides }
 }
 
 describe('InfluenceRadiusLayer', () => {

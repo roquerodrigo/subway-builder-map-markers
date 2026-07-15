@@ -16,11 +16,13 @@ export class GameSession {
   cityCode(): null | string {
     const fromApi = this.api.utils?.getCityCode?.()
     const code = fromApi && fromApi.length > 0 ? fromApi : this.readStore((state) => state.cityCode)
+
     return code && code.length > 0 ? code : null
   }
 
   saveId(): null | string {
     const id = this.readStore((state) => state.currentSaveInfo?.id)
+
     return id && id.length > 0 ? id : null
   }
 

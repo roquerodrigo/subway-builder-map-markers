@@ -53,15 +53,8 @@ export function snapToSpacing(candidate: Coordinate, neighbors: Coordinate[], ta
       return toCoordinate(vertex)
     }
   }
-  return toCoordinate(radialSnap(withinReach[0].point, targetMeters))
-}
 
-// Pull the origin (the dragged marker, at 0,0) onto the ring of radius `target`
-// around `neighbor`, keeping the current bearing. The caller only ever passes a
-// neighbor already within the tolerance of that ring, so the move is small.
-function radialSnap(neighbor: LocalPoint, target: number): LocalPoint {
-  const scale = 1 - target / Math.hypot(neighbor.x, neighbor.y)
-  return { x: neighbor.x * scale, y: neighbor.y * scale }
+  return toCoordinate(radialSnap(withinReach[0].point, targetMeters))
 }
 
 // The point at distance `target` from both neighbors, nearest the origin — the
@@ -82,5 +75,15 @@ function latticeVertex(a: LocalPoint, b: LocalPoint, target: number): LocalPoint
   const perpY = dx / separation
   const option1: LocalPoint = { x: midX + perpX * height, y: midY + perpY * height }
   const option2: LocalPoint = { x: midX - perpX * height, y: midY - perpY * height }
+
   return Math.hypot(option1.x, option1.y) <= Math.hypot(option2.x, option2.y) ? option1 : option2
+}
+
+// Pull the origin (the dragged marker, at 0,0) onto the ring of radius `target`
+// around `neighbor`, keeping the current bearing. The caller only ever passes a
+// neighbor already within the tolerance of that ring, so the move is small.
+function radialSnap(neighbor: LocalPoint, target: number): LocalPoint {
+  const scale = 1 - target / Math.hypot(neighbor.x, neighbor.y)
+
+  return { x: neighbor.x * scale, y: neighbor.y * scale }
 }

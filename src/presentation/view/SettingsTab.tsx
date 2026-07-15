@@ -16,21 +16,11 @@ export interface SettingsTabProps {
   settings: SettingsStore
 }
 
-function radiusSummary(radiusMeters: number): string {
-  const km = (radiusMeters * 2) / 1000
-  const diameter = km.toLocaleString('en-US', { maximumFractionDigits: 1 })
-  return `${radiusMeters} m · ${diameter} km across`
-}
-
-function idleOpacitySummary(idleOpacity: number): string {
-  const percent = `${Math.round(idleOpacity * 100)}%`
-  return idleOpacity >= MAX_IDLE_OPACITY ? `${percent} · no fading` : percent
-}
-
 // The global display settings: the influence radius and the show/hide toggles.
 // Editing here writes to the shared SettingsStore, which the map layers observe.
 export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
   const current = useSettings(settings)
+
   return (
     <div className="space-y-4 pt-1">
       <div className="space-y-2">
@@ -104,4 +94,17 @@ export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
       </div>
     </div>
   )
+}
+
+function idleOpacitySummary(idleOpacity: number): string {
+  const percent = `${Math.round(idleOpacity * 100)}%`
+
+  return idleOpacity >= MAX_IDLE_OPACITY ? `${percent} · no fading` : percent
+}
+
+function radiusSummary(radiusMeters: number): string {
+  const km = (radiusMeters * 2) / 1000
+  const diameter = km.toLocaleString('en-US', { maximumFractionDigits: 1 })
+
+  return `${radiusMeters} m · ${diameter} km across`
 }

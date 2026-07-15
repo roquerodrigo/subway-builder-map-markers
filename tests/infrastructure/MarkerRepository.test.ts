@@ -12,16 +12,19 @@ interface MemoryStorage extends ModStorage {
 
 function createMemoryStorage(): MemoryStorage {
   const entries = new Map<string, unknown>()
+
   return {
-    entries,
     delete: (key) => {
       entries.delete(key)
+
       return Promise.resolve()
     },
+    entries,
     get: <T>(key: string, fallback: T): Promise<T> =>
       Promise.resolve(entries.has(key) ? (entries.get(key) as T) : fallback),
     set: (key, value) => {
       entries.set(key, value)
+
       return Promise.resolve()
     },
   }
@@ -29,11 +32,11 @@ function createMemoryStorage(): MemoryStorage {
 
 function marker(overrides: Partial<Marker> = {}): Marker {
   return {
-    id: 'marker-1',
-    position: [-46.6, -23.5],
     color: '#ef4444',
     icon: DEFAULT_MARKER_ICON,
+    id: 'marker-1',
     label: 'North',
+    position: [-46.6, -23.5],
     ...overrides,
   }
 }
@@ -147,17 +150,17 @@ describe('MarkerRepository', () => {
   it('heals a marker whose optional fields are missing or mistyped', async () => {
     const storage = createMemoryStorage()
     storage.entries.set('save:save-a', {
-      markers: [{ position: [-46.6, -23.5], color: 7, label: null }],
+      markers: [{ color: 7, label: null, position: [-46.6, -23.5] }],
       version: 1,
     })
     const repository = new MarkerRepository(storage)
     const [healed] = await repository.loadForSave('save-a')
     expect(healed).toEqual({
-      id: expect.stringMatching(/^m-/) as string,
-      position: [-46.6, -23.5],
       color: '#3b82f6',
       icon: DEFAULT_MARKER_ICON,
+      id: expect.stringMatching(/^m-/) as string,
       label: '',
+      position: [-46.6, -23.5],
     })
   })
 

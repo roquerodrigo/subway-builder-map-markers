@@ -17,21 +17,15 @@ import type { FakeGlMap } from './fakeGlMap'
 
 import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
 
-// Metres between two lng/lat points, independent of the geometry under test.
-function haversineMeters(a: [number, number], b: [number, number]): number {
-  const toRad = (degrees: number): number => (degrees * Math.PI) / 180
-  const earthRadius = 6371008.8
-  const dLat = toRad(b[1] - a[1])
-  const dLng = toRad(b[0] - a[0])
-  const h =
-    Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(toRad(a[1])) * Math.cos(toRad(b[1]))
-  return 2 * earthRadius * Math.asin(Math.sqrt(h))
+function badgeRootsOf(map: FakeGlMap): HTMLElement[] {
+  return Array.from(overlayOf(map).children) as HTMLElement[]
 }
 
 // Kept in memory so a debounced write can never outlive its test and leak into the
 // settings the next one loads.
 function createSettingsRepository(initial: MarkerSettings): SettingsRepository {
   let stored = initial
+
   return {
     load: (): MarkerSettings => stored,
     save: (settings: MarkerSettings): void => {
@@ -40,16 +34,25 @@ function createSettingsRepository(initial: MarkerSettings): SettingsRepository {
   }
 }
 
+// Metres between two lng/lat points, independent of the geometry under test.
+function haversineMeters(a: [number, number], b: [number, number]): number {
+  const toRad = (degrees: number): number => (degrees * Math.PI) / 180
+  const earthRadius = 6371008.8
+  const dLat = toRad(b[1] - a[1])
+  const dLng = toRad(b[0] - a[0])
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(toRad(a[1])) * Math.cos(toRad(b[1]))
+
+  return 2 * earthRadius * Math.asin(Math.sqrt(h))
+}
+
 function overlayOf(map: FakeGlMap): HTMLElement {
   const overlay = map.canvasContainer.querySelector<HTMLElement>('.sbmm-marker-overlay')
   if (!overlay) {
     throw new Error('the controller drew no overlay')
   }
-  return overlay
-}
 
-function badgeRootsOf(map: FakeGlMap): HTMLElement[] {
-  return Array.from(overlayOf(map).children) as HTMLElement[]
+  return overlay
 }
 
 describe('MapMarkersController', () => {
@@ -128,7 +131,7 @@ describe('MapMarkersController', () => {
     it('adds a marker where the map was clicked and selects it', () => {
       controller.start()
       controller.togglePlacement()
-      map.emit('click', { lngLat: { lng: 5, lat: 6 } })
+      map.emit('click', { lngLat: { lat: 6, lng: 5 } })
       expect(store.all()).toHaveLength(1)
       expect(store.all()[0].position).toEqual([5, 6])
       expect(store.selected()).toBe(store.all()[0].id)
@@ -137,7 +140,7 @@ describe('MapMarkersController', () => {
     it('disarms itself once the marker is placed', () => {
       controller.start()
       controller.togglePlacement()
-      map.emit('click', { lngLat: { lng: 5, lat: 6 } })
+      map.emit('click', { lngLat: { lat: 6, lng: 5 } })
       expect(controller.isPlacing()).toBe(false)
       expect(map.canvasContainer.style.cursor).toBe('')
     })
@@ -145,8 +148,8 @@ describe('MapMarkersController', () => {
     it('places only one marker per arming', () => {
       controller.start()
       controller.togglePlacement()
-      map.emit('click', { lngLat: { lng: 5, lat: 6 } })
-      map.emit('click', { lngLat: { lng: 7, lat: 8 } })
+      map.emit('click', { lngLat: { lat: 6, lng: 5 } })
+      map.emit('click', { lngLat: { lat: 8, lng: 7 } })
       expect(store.all()).toHaveLength(1)
     })
 
@@ -278,6 +281,7 @@ describe('MapMarkersController', () => {
       vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback): number => {
         const handle = nextHandle++
         frames.set(handle, callback)
+
         return handle
       })
       vi.stubGlobal('cancelAnimationFrame', (handle: number): void => {
@@ -309,11 +313,11 @@ describe('MapMarkersController', () => {
       store.select(null)
       firstBadge().dispatchEvent(new PointerEvent('pointerdown', {
         bubbles: true,
-        cancelable: true,
         button: 0,
-        pointerId: 1,
+        cancelable: true,
         clientX: 100,
         clientY: 100,
+        pointerId: 1,
       }))
       window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }))
       expect(store.selected()).toBe(store.all()[0].id)
@@ -327,17 +331,17 @@ describe('MapMarkersController', () => {
       controller.setPanelOpen(true)
       firstBadge().dispatchEvent(new PointerEvent('pointerdown', {
         bubbles: true,
-        cancelable: true,
         button: 0,
-        pointerId: 1,
+        cancelable: true,
         clientX: 120,
         clientY: 10,
+        pointerId: 1,
       }))
       window.dispatchEvent(new PointerEvent('pointermove', {
         bubbles: true,
-        pointerId: 1,
         clientX: 500 + MAP_RECT_LEFT,
         clientY: 300 + MAP_RECT_TOP,
+        pointerId: 1,
       }))
       flushFrames()
       expect(store.all()[0].position).toEqual([5, -3])
@@ -363,23 +367,24 @@ describe('MapMarkersController', () => {
       const badge = badgeRootsOf(map)[1].children[0] as HTMLElement
       badge.dispatchEvent(new PointerEvent('pointerdown', {
         bubbles: true,
-        cancelable: true,
         button: 0,
-        pointerId: 1,
+        cancelable: true,
         clientX: 100 + MAP_RECT_LEFT,
         clientY: MAP_RECT_TOP,
+        pointerId: 1,
       }))
       window.dispatchEvent(new PointerEvent('pointermove', {
         bubbles: true,
-        pointerId: 1,
         clientX: DRAGGED_LNG * SCALE + MAP_RECT_LEFT,
         clientY: MAP_RECT_TOP,
+        pointerId: 1,
       }))
       window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }))
       const marker = store.all().find((candidate) => candidate.id === dragged.id)
       if (!marker) {
         throw new Error('the dragged marker vanished')
       }
+
       return marker.position
     }
 

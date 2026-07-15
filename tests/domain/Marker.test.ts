@@ -13,6 +13,7 @@ function equilateralCircumradius(side: number): number {
   ]
   const centerX = corners.reduce((sum, corner) => sum + corner[0], 0) / corners.length
   const centerY = corners.reduce((sum, corner) => sum + corner[1], 0) / corners.length
+
   return Math.hypot(corners[0][0] - centerX, corners[0][1] - centerY)
 }
 

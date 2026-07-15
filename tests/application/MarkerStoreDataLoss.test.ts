@@ -13,13 +13,14 @@ interface SessionState {
   save: null | string
 }
 
-function makeStore(state: SessionState): MarkerStore {
-  const session: Session = { cityCode: () => state.city, saveId: () => state.save }
-  return new MarkerStore(new MarkerRepository(createModStorage()), session as never)
-}
-
 function labels(store: MarkerStore): string[] {
   return store.all().map((marker) => marker.label)
+}
+
+function makeStore(state: SessionState): MarkerStore {
+  const session: Session = { cityCode: () => state.city, saveId: () => state.save }
+
+  return new MarkerStore(new MarkerRepository(createModStorage()), session as never)
 }
 
 // These pin the two ways the store used to lose a player's markers. Both are quiet
@@ -28,6 +29,7 @@ function labels(store: MarkerStore): string[] {
 describe('MarkerStore data loss', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+
     return () => vi.useRealTimers()
   })
 

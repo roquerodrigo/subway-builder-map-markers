@@ -9,17 +9,17 @@ import { CARD_CLASS, selectedCardStyle } from '@/presentation/theme'
 
 export interface MarkerCardProps {
   marker: Marker
-  selected: boolean
-  onSelect: () => void
-  onUpdate: (patch: Partial<Omit<Marker, 'id'>>) => void
   onFocus: () => void
   onRemove: () => void
+  onSelect: () => void
+  onUpdate: (patch: Partial<Omit<Marker, 'id'>>) => void
+  selected: boolean
 }
 
 // One marker's controls: its badge, an editable label, color + icon pickers, the
 // 1 km radius toggle, and focus/remove actions. Selecting the card highlights the
 // matching badge on the map (and vice-versa).
-export function MarkerCard({ marker, selected, onSelect, onUpdate, onFocus, onRemove }: MarkerCardProps): JSX.Element {
+export function MarkerCard({ marker, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps): JSX.Element {
   const cardRef = React.useRef<HTMLDivElement>(null)
 
   // Selection usually starts on the map (clicking or dropping a badge), and the

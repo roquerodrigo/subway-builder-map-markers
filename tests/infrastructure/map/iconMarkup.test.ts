@@ -6,18 +6,30 @@ import { markerIcon } from '@/domain/marker/MarkerIconSet'
 import { iconSvgMarkup } from '@/infrastructure/map/iconMarkup'
 
 const singleElementIcon: MarkerIcon = {
+  elements: [{ attrs: { cx: 12, cy: 12, r: 8 }, tag: 'circle' }],
   key: 'probe',
   label: 'Probe',
-  elements: [{ tag: 'circle', attrs: { cx: 12, cy: 12, r: 8 } }],
 }
 
 const filledIcon: MarkerIcon = {
+  elements: [
+    { attrs: { cx: 12, cy: 12, r: 8 }, tag: 'circle' },
+    { attrs: { cx: 12, cy: 12, fill: 'currentColor', r: 1.6 }, tag: 'circle' },
+  ],
   key: 'filled',
   label: 'Filled',
-  elements: [
-    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 8 } },
-    { tag: 'circle', attrs: { cx: 12, cy: 12, r: 1.6, fill: 'currentColor' } },
-  ],
+}
+
+// Reads the attributes back out rather than matching the serialized string: their
+// order carries no meaning in SVG, and pinning it makes an unrelated reshuffle of
+// the icon set look like a break.
+function attributesOf(markup: string, tag: string): Record<string, string>[] {
+  const host = document.createElement('div')
+  host.innerHTML = markup
+
+  return [...host.querySelectorAll(tag)].map((element) =>
+    Object.fromEntries([...element.attributes].map((attribute) => [attribute.name, attribute.value])),
+  )
 }
 
 describe('iconSvgMarkup', () => {
@@ -36,7 +48,7 @@ describe('iconSvgMarkup', () => {
 
   it('serializes every element of a multi-part icon', () => {
     const markup = iconSvgMarkup(markerIcon('station'), '#ffffff', 18)
-    expect(markup).toContain('<rect x="5" y="4" width="14" height="12" rx="3" />')
+    expect(attributesOf(markup, 'rect')[0]).toEqual({ height: '12', rx: '3', width: '14', x: '5', y: '4' })
     expect(markup.match(/<line /g)).toHaveLength(3)
   })
 
@@ -44,7 +56,7 @@ describe('iconSvgMarkup', () => {
   // would resolve to nothing there and the filled parts would disappear.
   it('resolves currentColor to the requested color', () => {
     const markup = iconSvgMarkup(filledIcon, '#00ff00', 18)
-    expect(markup).toContain('<circle cx="12" cy="12" r="1.6" fill="#00ff00" />')
+    expect(attributesOf(markup, 'circle')[1]).toEqual({ cx: '12', cy: '12', fill: '#00ff00', r: '1.6' })
     expect(markup).not.toContain('currentColor')
   })
 

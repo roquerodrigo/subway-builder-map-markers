@@ -3,8 +3,8 @@ import { h } from '@/infrastructure/ui/react'
 export type PanelTab = 'markers' | 'settings'
 
 export interface TabBarProps {
-  tab: PanelTab
   onSelect: (tab: PanelTab) => void
+  tab: PanelTab
 }
 
 const TABS: { key: PanelTab, label: string }[] = [
@@ -14,11 +14,12 @@ const TABS: { key: PanelTab, label: string }[] = [
 
 // The two-tab switcher at the top of the panel: the marker list and the global
 // display settings.
-export function TabBar({ tab, onSelect }: TabBarProps): JSX.Element {
+export function TabBar({ onSelect, tab }: TabBarProps): JSX.Element {
   return (
     <div className="flex gap-1 rounded-md bg-primary/5 p-1">
       {TABS.map((entry) => {
         const active = entry.key === tab
+
         return (
           <button
             aria-pressed={active}

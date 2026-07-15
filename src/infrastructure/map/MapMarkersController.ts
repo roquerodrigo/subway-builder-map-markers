@@ -34,11 +34,11 @@ export class MapMarkersController {
     const getMap = (): GlMap | null => this.map()
     this.markerLayer = new MarkerLayer(getMap, {
       onClick: (id) => this.store.select(id),
-      onDragMove: (id, position) => this.store.update(id, { position }),
       onDragEnd: (id, position) => {
         this.store.update(id, { position })
         this.store.select(id)
       },
+      onDragMove: (id, position) => this.store.update(id, { position }),
       snapPosition: (id, candidate) => this.snapToNeighbors(id, candidate),
     })
     this.radiusLayer = new InfluenceRadiusLayer(getMap)
@@ -76,6 +76,7 @@ export class MapMarkersController {
 
   onPlacementChange(listener: PlacementListener): () => void {
     this.placementListeners.add(listener)
+
     return () => this.placementListeners.delete(listener)
   }
 
@@ -166,6 +167,7 @@ export class MapMarkersController {
       .all()
       .filter((marker) => marker.id !== draggingId)
       .map((marker) => marker.position)
+
     return snapToSpacing(candidate, neighbors, settings.radiusMeters * OPTIMAL_SPACING_FACTOR)
   }
 }

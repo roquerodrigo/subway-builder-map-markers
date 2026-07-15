@@ -7,8 +7,27 @@ import type { MapMarkersController } from '@/infrastructure/map/MapMarkersContro
 
 import { useMarkers, usePlacement } from '@/presentation/hooks/useMarkers'
 
+function createControllerDouble(initiallyPlacing = false) {
+  const listeners = new Set<(placing: boolean) => void>()
+  let placing = initiallyPlacing
+
+  return {
+    emit: (next: boolean) => {
+      placing = next
+      listeners.forEach((listener) => listener(next))
+    },
+    isPlacing: () => placing,
+    listenerCount: () => listeners.size,
+    onPlacementChange: (listener: (placing: boolean) => void) => {
+      listeners.add(listener)
+
+      return () => listeners.delete(listener)
+    },
+  }
+}
+
 function createMarker(id: string, label: string): Marker {
-  return { id, position: [-46.63, -23.55], color: '#ef4444', icon: 'station', label }
+  return { color: '#ef4444', icon: 'station', id, label, position: [-46.63, -23.55] }
 }
 
 function createStoreDouble(initial: Marker[] = []) {
@@ -16,14 +35,11 @@ function createStoreDouble(initial: Marker[] = []) {
   let markers = initial
   let selectedId: null | string = null
   const notify = (): void => listeners.forEach((listener) => listener())
+
   return {
     all: () => markers,
-    selected: () => selectedId,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
     listenerCount: () => listeners.size,
+    selected: () => selectedId,
     setMarkers: (next: Marker[]) => {
       markers = next
       notify()
@@ -32,22 +48,10 @@ function createStoreDouble(initial: Marker[] = []) {
       selectedId = id
       notify()
     },
-  }
-}
-
-function createControllerDouble(initiallyPlacing = false) {
-  const listeners = new Set<(placing: boolean) => void>()
-  let placing = initiallyPlacing
-  return {
-    isPlacing: () => placing,
-    onPlacementChange: (listener: (placing: boolean) => void) => {
+    subscribe: (listener: () => void) => {
       listeners.add(listener)
+
       return () => listeners.delete(listener)
-    },
-    listenerCount: () => listeners.size,
-    emit: (next: boolean) => {
-      placing = next
-      listeners.forEach((listener) => listener(next))
     },
   }
 }

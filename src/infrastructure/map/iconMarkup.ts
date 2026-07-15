@@ -11,9 +11,11 @@ export function iconSvgMarkup(icon: MarkerIcon, color: string, size: number, str
       const attributes = Object.entries(element.attrs)
         .map(([name, value]) => `${name}="${value === 'currentColor' ? color : value}"`)
         .join(' ')
+
       return `<${element.tag} ${attributes} />`
     })
     .join('')
+
   return (
     `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" ` +
     `stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`

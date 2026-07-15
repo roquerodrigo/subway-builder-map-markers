@@ -34,6 +34,12 @@ const eslintConfig = defineConfig([
     rules: {
       '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
       '@stylistic/operator-linebreak': ['error', 'after'],
+      // A blank line before a return separates what a function works out from what
+      // it hands back. Only when something precedes it — a lone return stays tight.
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', next: 'return', prev: '*' },
+      ],
       'curly': ['error', 'all'],
     },
   },
@@ -94,18 +100,6 @@ const eslintConfig = defineConfig([
       ],
       '@typescript-eslint/no-unnecessary-type-assertion': 'error',
       '@typescript-eslint/require-await': 'error',
-    },
-  },
-  // Keep perfectionist's *mechanical* ordering (imports, named imports, union
-  // types) but turn off the rules that force alphabetical ordering of object
-  // keys / declarations / type members — those fight deliberate logical grouping.
-  {
-    name: 'perfectionist/allow-logical-grouping',
-    rules: {
-      'perfectionist/sort-interfaces': 'off',
-      'perfectionist/sort-modules': 'off',
-      'perfectionist/sort-object-types': 'off',
-      'perfectionist/sort-objects': 'off',
     },
   },
 ])

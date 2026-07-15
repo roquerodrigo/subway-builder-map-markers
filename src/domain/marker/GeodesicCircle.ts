@@ -30,5 +30,6 @@ export function geodesicCircle(center: Coordinate, radiusMeters: number, points 
     )
     ring.push([pointLng * DEGREES, pointLat * DEGREES])
   }
+
   return ring
 }

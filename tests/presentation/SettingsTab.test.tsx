@@ -11,10 +11,12 @@ import { SettingsTab } from '@/presentation/view/SettingsTab'
 function createSettingsDouble(initial: Partial<MarkerSettings> = {}) {
   const listeners = new Set<() => void>()
   let settings: MarkerSettings = { ...DEFAULT_SETTINGS, ...initial }
+
   return {
     get: () => settings,
     subscribe: (listener: () => void) => {
       listeners.add(listener)
+
       return () => listeners.delete(listener)
     },
     update: vi.fn((patch: Partial<MarkerSettings>) => {
@@ -27,6 +29,7 @@ function createSettingsDouble(initial: Partial<MarkerSettings> = {}) {
 function renderTab(initial: Partial<MarkerSettings> = {}) {
   const settings = createSettingsDouble(initial)
   render(<SettingsTab settings={settings as unknown as SettingsStore} />)
+
   return settings
 }
 

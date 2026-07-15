@@ -5,11 +5,11 @@ import type { Coordinate } from '@/shared/game/Coordinate'
 // Display concerns (the influence radius, whether names/circles show) are global
 // settings, not per-marker; see domain/settings/MarkerSettings.
 export interface Marker {
-  id: string
-  position: Coordinate
   color: string
   icon: string
+  id: string
   label: string
+  position: Coordinate
 }
 
 // The optimal center-to-center spacing between neighboring markers is √3 times the

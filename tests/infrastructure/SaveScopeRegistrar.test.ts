@@ -20,6 +20,16 @@ interface HookRecorder {
   registered: Map<string, (arg?: string) => void>
 }
 
+function createStoreSpies() {
+  const store = new MarkerStore(new MarkerRepository(createModStorage()), new GameSession({}, null))
+
+  return {
+    startNewGame: vi.spyOn(store, 'startNewGame').mockImplementation(() => {}),
+    store,
+    sync: vi.spyOn(store, 'sync').mockResolvedValue(undefined),
+  }
+}
+
 function recordHooks(names: string[] = ALL_HOOKS): HookRecorder {
   const registered = new Map<string, (arg?: string) => void>()
   const hooks: GameHooks = {}
@@ -28,16 +38,8 @@ function recordHooks(names: string[] = ALL_HOOKS): HookRecorder {
       registered.set(name, callback)
     }
   }
-  return { hooks, registered }
-}
 
-function createStoreSpies() {
-  const store = new MarkerStore(new MarkerRepository(createModStorage()), new GameSession({}, null))
-  return {
-    store,
-    startNewGame: vi.spyOn(store, 'startNewGame').mockImplementation(() => {}),
-    sync: vi.spyOn(store, 'sync').mockResolvedValue(undefined),
-  }
+  return { hooks, registered }
 }
 
 let fixture: ReturnType<typeof createStoreSpies>

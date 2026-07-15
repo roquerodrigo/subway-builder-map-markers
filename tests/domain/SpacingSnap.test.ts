@@ -15,7 +15,19 @@ function haversineMeters(a: [number, number], b: [number, number]): number {
   const lat2 = toRad(b[1])
   const h =
     Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(lat1) * Math.cos(lat2)
+
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h))
+}
+
+// `angleDegrees` is measured counter-clockwise from due east.
+function neighborAt(distanceMeters: number, angleDegrees: number): [number, number] {
+  const radians = (angleDegrees * Math.PI) / 180
+
+  return offsetMeters(
+    CANDIDATE,
+    distanceMeters * Math.cos(radians),
+    distanceMeters * Math.sin(radians),
+  )
 }
 
 // A point `east`/`north` metres from `origin`, on the same sphere haversineMeters
@@ -25,17 +37,8 @@ function haversineMeters(a: [number, number], b: [number, number]): number {
 function offsetMeters(origin: [number, number], east: number, north: number): [number, number] {
   const metersPerDegreeLat = (Math.PI * EARTH_RADIUS_METERS) / 180
   const metersPerDegreeLng = metersPerDegreeLat * Math.cos((origin[1] * Math.PI) / 180)
-  return [origin[0] + east / metersPerDegreeLng, origin[1] + north / metersPerDegreeLat]
-}
 
-// `angleDegrees` is measured counter-clockwise from due east.
-function neighborAt(distanceMeters: number, angleDegrees: number): [number, number] {
-  const radians = (angleDegrees * Math.PI) / 180
-  return offsetMeters(
-    CANDIDATE,
-    distanceMeters * Math.cos(radians),
-    distanceMeters * Math.sin(radians),
-  )
+  return [origin[0] + east / metersPerDegreeLng, origin[1] + north / metersPerDegreeLat]
 }
 
 describe('snapToSpacing', () => {

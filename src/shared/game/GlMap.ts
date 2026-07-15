@@ -2,20 +2,13 @@
 // uses. Only the members actually called are typed; the live instance has many
 // more. Both GL libraries share these method names/shapes.
 
-export interface Point { x: number, y: number }
-export interface LngLat { lng: number, lat: number }
-export type LngLatLike = [number, number] | LngLat
-
-// Fired by 'click'/'contextmenu' — carries the geographic point that was clicked.
-export interface MapMouseEvent { lngLat: LngLat }
-
 // dragPan is the built-in pan handler; disabling it during a marker drag stops the
 // map from panning under the pointer, then it's re-enabled on drop.
 export interface DragPan { disable(): void, enable(): void }
-
 export interface GlMap {
   addLayer(layer: unknown, beforeId?: string): void
   addSource(id: string, source: unknown): void
+  dragPan?: DragPan
   easeTo(options: { center: LngLatLike, duration?: number, zoom?: number }): void
   getCanvasContainer(): HTMLElement
   getCenter(): LngLat
@@ -30,5 +23,12 @@ export interface GlMap {
   setFilter(layerId: string, filter: unknown): void
   setPaintProperty(layerId: string, name: string, value: unknown): void
   unproject(point: [number, number]): LngLat
-  dragPan?: DragPan
 }
+export interface LngLat { lat: number, lng: number }
+
+export type LngLatLike = [number, number] | LngLat
+
+// Fired by 'click'/'contextmenu' — carries the geographic point that was clicked.
+export interface MapMouseEvent { lngLat: LngLat }
+
+export interface Point { x: number, y: number }

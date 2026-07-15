@@ -12,35 +12,6 @@ import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
 import { h } from '@/infrastructure/ui/react'
 import { createMarkersPanel } from '@/presentation/MarkersPanel'
 
-function createMarker(id: string, label: string): Marker {
-  return { id, position: [-46.63, -23.55], color: '#ef4444', icon: 'station', label }
-}
-
-function createStoreDouble(initial: Marker[] = []) {
-  const listeners = new Set<() => void>()
-  let markers = initial
-  let selectedId: null | string = null
-  const notify = (): void => listeners.forEach((listener) => listener())
-  return {
-    all: () => markers,
-    selected: () => selectedId,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
-    select: vi.fn((id: null | string) => {
-      selectedId = id
-      notify()
-    }),
-    clear: vi.fn(() => {
-      markers = []
-      notify()
-    }),
-    remove: vi.fn(),
-    update: vi.fn(),
-  }
-}
-
 function createControllerDouble() {
   const listeners = new Set<(placing: boolean) => void>()
   let placing = false
@@ -48,23 +19,56 @@ function createControllerDouble() {
     placing = next
     listeners.forEach((listener) => listener(next))
   }
+
   return {
+    cancelPlacement: vi.fn(() => setPlacing(false)),
+    focus: vi.fn(),
     isPlacing: () => placing,
     onPlacementChange: (listener: (placing: boolean) => void) => {
       listeners.add(listener)
+
       return () => listeners.delete(listener)
     },
     setPanelOpen: vi.fn(),
-    cancelPlacement: vi.fn(() => setPlacing(false)),
     togglePlacement: vi.fn(() => setPlacing(!placing)),
-    focus: vi.fn(),
   }
+}
+
+function createMarker(id: string, label: string): Marker {
+  return { color: '#ef4444', icon: 'station', id, label, position: [-46.63, -23.55] }
 }
 
 function createSettingsDouble() {
   return {
     get: () => DEFAULT_SETTINGS,
     subscribe: () => () => undefined,
+    update: vi.fn(),
+  }
+}
+
+function createStoreDouble(initial: Marker[] = []) {
+  const listeners = new Set<() => void>()
+  let markers = initial
+  let selectedId: null | string = null
+  const notify = (): void => listeners.forEach((listener) => listener())
+
+  return {
+    all: () => markers,
+    clear: vi.fn(() => {
+      markers = []
+      notify()
+    }),
+    remove: vi.fn(),
+    select: vi.fn((id: null | string) => {
+      selectedId = id
+      notify()
+    }),
+    selected: () => selectedId,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+
+      return () => listeners.delete(listener)
+    },
     update: vi.fn(),
   }
 }
@@ -81,6 +85,7 @@ function renderPanel(markers: Marker[] = []) {
   } satisfies PanelDependencies
   const MarkersPanel = createMarkersPanel(dependencies)
   const view = render(<MarkersPanel />)
+
   return { controller, settings, store, view }
 }
 

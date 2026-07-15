@@ -22,11 +22,13 @@ export function createModStorage(): ModStorage {
       } catch {
         /* storage unavailable */
       }
+
       return Promise.resolve()
     },
     get: <T>(key: string, fallback: T): Promise<T> => {
       try {
         const raw = window.localStorage.getItem(PREFIX + key)
+
         return Promise.resolve(raw === null ? fallback : (JSON.parse(raw) as T))
       } catch {
         return Promise.resolve(fallback)
@@ -38,6 +40,7 @@ export function createModStorage(): ModStorage {
       } catch {
         /* storage unavailable */
       }
+
       return Promise.resolve()
     },
   }

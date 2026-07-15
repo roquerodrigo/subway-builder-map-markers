@@ -10,16 +10,18 @@ import { useSettings } from '@/presentation/hooks/useSettings'
 function createSettingsDouble(initial: MarkerSettings = DEFAULT_SETTINGS) {
   const listeners = new Set<() => void>()
   let settings = initial
+
   return {
     get: () => settings,
-    subscribe: (listener: () => void) => {
-      listeners.add(listener)
-      return () => listeners.delete(listener)
-    },
     listenerCount: () => listeners.size,
     set: (patch: Partial<MarkerSettings>) => {
       settings = { ...settings, ...patch }
       listeners.forEach((listener) => listener())
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+
+      return () => listeners.delete(listener)
     },
   }
 }

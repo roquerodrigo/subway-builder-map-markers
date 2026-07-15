@@ -1,13 +1,6 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
-  // Mirrors the `@/*` paths in tsconfig, which esbuild reads on its own but vite
-  // does not.
-  resolve: {
-    alias: {
-      '@': new URL('./src', import.meta.url).pathname,
-    },
-  },
   // Mirrors scripts/build.mjs and tsconfig: JSX compiles to `h`, which every .tsx
   // imports from infrastructure/ui/react — so tests exercise the same host-React
   // wiring the game uses, rather than a bundled React the mod never ships.
@@ -16,6 +9,13 @@ export default defineConfig({
       pragma: 'h',
       pragmaFrag: 'Fragment',
       runtime: 'classic',
+    },
+  },
+  // Mirrors the `@/*` paths in tsconfig, which esbuild reads on its own but vite
+  // does not.
+  resolve: {
+    alias: {
+      '@': new URL('./src', import.meta.url).pathname,
     },
   },
   test: {

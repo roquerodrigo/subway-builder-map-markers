@@ -77,12 +77,13 @@ function fixedAncestor(element: HTMLElement | null): HTMLElement | null {
     }
     node = node.parentElement
   }
+
   return null
 }
 
 function persist(x: number, y: number, width: number, height: number): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ x, y, width, height }))
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ height, width, x, y }))
   } catch {
     /* storage unavailable — the live clamp already fixed this open */
   }

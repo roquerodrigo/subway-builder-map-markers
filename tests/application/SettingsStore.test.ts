@@ -8,6 +8,7 @@ const PERSIST_DEBOUNCE_MS = 250
 
 function createStore() {
   const repository = new SettingsRepository()
+
   return { repository, save: vi.spyOn(repository, 'save'), store: new SettingsStore(repository) }
 }
 

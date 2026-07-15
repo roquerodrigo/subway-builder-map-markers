@@ -6,20 +6,21 @@ import { FloatingPanelRegistrar } from '@/infrastructure/ui/FloatingPanelRegistr
 
 const LIFECYCLE_HOOKS = ['onGameInit', 'onCityLoad', 'onMapReady']
 
-function createUiDouble() {
-  return {
-    addFloatingPanel: vi.fn(),
-    unregisterComponent: vi.fn(),
-  }
-}
-
 function createHooksDouble() {
   const callbacks = new Map<string, (argument?: string) => void>()
   const hooks: Record<string, (callback: (argument?: string) => void) => void> = {}
   for (const name of LIFECYCLE_HOOKS) {
     hooks[name] = vi.fn((callback) => callbacks.set(name, callback))
   }
+
   return { callbacks, hooks }
+}
+
+function createUiDouble() {
+  return {
+    addFloatingPanel: vi.fn(),
+    unregisterComponent: vi.fn(),
+  }
 }
 
 let consoleError: MockInstance
@@ -140,7 +141,7 @@ describe('FloatingPanelRegistrar lifecycle hooks', () => {
   })
 
   it('skips a hook entry that is not callable', () => {
-    const hooks = { onGameInit: undefined, onCityLoad: vi.fn(), onMapReady: undefined }
+    const hooks = { onCityLoad: vi.fn(), onGameInit: undefined, onMapReady: undefined }
     expect(() =>
       new FloatingPanelRegistrar({ hooks, ui: createUiDouble() }, vi.fn(), vi.fn()).installLifecycleHooks(),
     ).not.toThrow()

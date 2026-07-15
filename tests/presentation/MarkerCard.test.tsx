@@ -8,11 +8,11 @@ import { MarkerCard } from '@/presentation/components/MarkerCard'
 import { selectedCardStyle } from '@/presentation/theme'
 
 const marker = {
-  id: 'marker-1',
-  position: [-46.63, -23.55] as [number, number],
   color: '#ef4444',
   icon: 'station',
+  id: 'marker-1',
   label: 'Central',
+  position: [-46.63, -23.55] as [number, number],
 }
 
 function renderCard(overrides: { selected?: boolean } = {}) {
@@ -32,6 +32,7 @@ function renderCard(overrides: { selected?: boolean } = {}) {
       selected={overrides.selected ?? false}
     />,
   )
+
   return { ...handlers, card: container.firstElementChild as HTMLElement }
 }
 

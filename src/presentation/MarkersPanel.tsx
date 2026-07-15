@@ -12,7 +12,8 @@ import { SettingsTab } from '@/presentation/view/SettingsTab'
 // shared MarkerStore) and the global display settings (the SettingsStore). Both
 // stores are observed by the map layers, so the panel and the map never drift.
 export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.Element {
-  const { store, controller, settings } = dependencies
+  const { controller, settings, store } = dependencies
+
   return function MarkersPanel(): JSX.Element {
     const { markers, selectedId } = useMarkers(store)
     const placing = usePlacement(controller)
@@ -32,6 +33,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
     // highlighted on the map.
     React.useEffect(() => {
       controller.setPanelOpen(true)
+
       return () => {
         controller.setPanelOpen(false)
         controller.cancelPlacement()
@@ -49,6 +51,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
     const clearAll = (): void => {
       if (!confirmClear) {
         setConfirmClear(true)
+
         return
       }
       store.clear()

@@ -48,6 +48,7 @@ export class MarkerStore {
     this.markers = [...this.markers, marker]
     this.selectedId = marker.id
     this.commit()
+
     return marker
   }
 
@@ -102,6 +103,7 @@ export class MarkerStore {
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
+
     return () => this.listeners.delete(listener)
   }
 
@@ -137,6 +139,7 @@ export class MarkerStore {
       this.saveId = saveId
       this.city = city
       this.loadToken++
+
       return
     }
 
@@ -158,6 +161,7 @@ export class MarkerStore {
     // when there's nothing to lose: a save with markers of its own still wins.
     if (wasUnsaved && markers.length === 0 && this.markers.length > 0) {
       this.persist()
+
       return
     }
 
@@ -176,6 +180,7 @@ export class MarkerStore {
         return marker
       }
       changed = true
+
       return { ...marker, ...patch }
     })
     if (changed) {
@@ -220,6 +225,7 @@ export class MarkerStore {
     if (city) {
       return this.repository.loadRecent(city)
     }
+
     return []
   }
 

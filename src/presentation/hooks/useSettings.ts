@@ -10,7 +10,9 @@ export function useSettings(store: SettingsStore): MarkerSettings {
   React.useEffect(() => {
     const update = (): void => setSettings(store.get())
     update()
+
     return store.subscribe(update)
   }, [store])
+
   return settings
 }

@@ -50,6 +50,7 @@ export class FloatingPanelRegistrar {
     const ui = this.api.ui
     if (!ui || typeof ui.addFloatingPanel !== 'function' || !isReactAvailable()) {
       logger.error('api.ui.addFloatingPanel / React unavailable — mod disabled.')
+
       return
     }
     try {
@@ -58,15 +59,15 @@ export class FloatingPanelRegistrar {
       /* first registration — nothing to unregister */
     }
     ui.addFloatingPanel({
-      id: PANEL_ID,
-      icon: 'MapPin',
-      tooltip: 'Map Markers',
-      title: 'Map Markers',
-      defaultWidth: 380,
       defaultHeight: 560,
-      minWidth: 300,
+      defaultWidth: 380,
+      icon: 'MapPin',
+      id: PANEL_ID,
       minHeight: 360,
+      minWidth: 300,
       render: this.render,
+      title: 'Map Markers',
+      tooltip: 'Map Markers',
     })
   }
 }

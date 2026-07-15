@@ -73,11 +73,13 @@ export class InfluenceRadiusLayer {
     if (source) {
       source.setData(data)
       this.ensureLayers(map)
+
       return
     }
 
     if (!map.isStyleLoaded()) {
       this.retryDraw()
+
       return
     }
     try {
@@ -91,45 +93,45 @@ export class InfluenceRadiusLayer {
   private ensureLayers(map: GlMap): void {
     if (!map.getLayer(FILL_LAYER)) {
       map.addLayer({
-        id: FILL_LAYER,
-        type: 'fill',
-        source: SOURCE_ID,
         filter: COVERAGE_FILTER,
+        id: FILL_LAYER,
         paint: {
           'fill-color': COVERAGE_COLOR,
           'fill-opacity': this.scaled(COVERAGE_FILL_OPACITY),
         },
+        source: SOURCE_ID,
+        type: 'fill',
       })
     }
     // Guide first, so the influence outline draws on top of it.
     if (!map.getLayer(GUIDE_LAYER)) {
       map.addLayer({
-        id: GUIDE_LAYER,
-        type: 'line',
-        source: SOURCE_ID,
         filter: GUIDE_FILTER,
+        id: GUIDE_LAYER,
         layout: { 'line-join': 'round' },
         paint: {
           'line-color': GUIDE_COLOR,
+          'line-dasharray': [1, 3],
           'line-opacity': this.scaled(GUIDE_OPACITY),
           'line-width': 1.5,
-          'line-dasharray': [1, 3],
         },
+        source: SOURCE_ID,
+        type: 'line',
       })
     }
     if (!map.getLayer(LINE_LAYER)) {
       map.addLayer({
-        id: LINE_LAYER,
-        type: 'line',
-        source: SOURCE_ID,
         filter: OUTLINE_FILTER,
+        id: LINE_LAYER,
         layout: { 'line-join': 'round' },
         paint: {
           'line-color': ['get', 'color'],
+          'line-dasharray': [2, 2],
           'line-opacity': this.scaled(LINE_OPACITY),
           'line-width': 2,
-          'line-dasharray': [2, 2],
         },
+        source: SOURCE_ID,
+        type: 'line',
       })
     }
     // Keep the paint/filters in sync so a tweaked value (or a re-injected build)
@@ -150,12 +152,12 @@ export class InfluenceRadiusLayer {
       // One union feature for the fill: overlapping circles in a single MultiPolygon
       // render as their union (nonzero winding), so overlaps don't stack up.
       features.push({
-        type: 'Feature',
-        properties: { role: 'coverage' },
         geometry: {
-          type: 'MultiPolygon',
           coordinates: this.markers.map((marker) => [geodesicCircle(marker.position, this.radiusMeters)]),
+          type: 'MultiPolygon',
         },
+        properties: { role: 'coverage' },
+        type: 'Feature',
       })
       for (const marker of this.markers) {
         features.push(this.ring(marker, this.radiusMeters, 'outline'))
@@ -168,6 +170,7 @@ export class InfluenceRadiusLayer {
         features.push(this.ring(marker, this.radiusMeters * SPACING_RADIUS_FRACTION, 'guide'))
       }
     }
+
     return { features, type: 'FeatureCollection' }
   }
 
@@ -181,12 +184,12 @@ export class InfluenceRadiusLayer {
 
   private ring(marker: Marker, radius: number, role: string): unknown {
     return {
-      type: 'Feature',
-      properties: { role, color: marker.color },
       geometry: {
-        type: 'Polygon',
         coordinates: [geodesicCircle(marker.position, radius)],
+        type: 'Polygon',
       },
+      properties: { color: marker.color, role },
+      type: 'Feature',
     }
   }
 
