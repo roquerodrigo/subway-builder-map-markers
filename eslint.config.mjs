@@ -33,6 +33,21 @@ const eslintConfig = defineConfig([
     },
     rules: {
       '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
+      '@stylistic/function-call-spacing': ['error', 'never'],
+      '@stylistic/jsx-pascal-case': 'error',
+      '@stylistic/jsx-self-closing-comp': 'error',
+      '@stylistic/linebreak-style': ['error', 'unix'],
+      '@stylistic/lines-around-comment': [
+        'error',
+        { allowBlockStart: true, allowClassStart: true, allowObjectStart: true, beforeBlockComment: true },
+      ],
+      '@stylistic/multiline-comment-style': ['error', 'separate-lines'],
+      '@stylistic/newline-per-chained-call': ['error', { ignoreChainWithDepth: 3 }],
+      '@stylistic/no-confusing-arrow': 'error',
+      '@stylistic/no-extra-semi': 'error',
+      '@stylistic/nonblock-statement-body-position': ['error', 'beside'],
+      '@stylistic/object-property-newline': ['error', { allowAllPropertiesOnSameLine: true }],
+      '@stylistic/one-var-declaration-per-line': ['error', 'always'],
       '@stylistic/operator-linebreak': ['error', 'after'],
       // A blank line before a return separates what a function works out from what
       // it hands back. Only when something precedes it — a lone return stays tight.
@@ -40,6 +55,8 @@ const eslintConfig = defineConfig([
         'error',
         { blankLine: 'always', next: 'return', prev: '*' },
       ],
+      '@stylistic/semi-style': ['error', 'last'],
+      '@stylistic/switch-colon-spacing': 'error',
       'curly': ['error', 'all'],
     },
   },
@@ -78,7 +95,7 @@ const eslintConfig = defineConfig([
       'react-hooks/rules-of-hooks': 'error',
     },
   },
-  // type-aware (só .ts/.tsx)
+  // Type-aware rules: .ts/.tsx only.
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
