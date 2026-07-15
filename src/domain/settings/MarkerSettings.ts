@@ -40,10 +40,10 @@ export function normalizeSettings(value: null | Partial<MarkerSettings> | undefi
   return {
     idleOpacity: coerce(value?.idleOpacity, DEFAULT_IDLE_OPACITY, MIN_IDLE_OPACITY, MAX_IDLE_OPACITY),
     radiusMeters: coerce(value?.radiusMeters, DEFAULT_RADIUS_METERS, MIN_RADIUS_METERS, MAX_RADIUS_METERS),
-    showInfluence: value?.showInfluence !== false,
-    showLabels: value?.showLabels !== false,
-    showSpacingGuide: value?.showSpacingGuide !== false,
-    snapToSpacing: value?.snapToSpacing !== false,
+    showInfluence: coerceToggle(value?.showInfluence, true),
+    showLabels: coerceToggle(value?.showLabels, true),
+    showSpacingGuide: coerceToggle(value?.showSpacingGuide, true),
+    snapToSpacing: coerceToggle(value?.snapToSpacing, true),
   }
 }
 
@@ -55,4 +55,11 @@ export function settingsEqual(one: MarkerSettings, other: MarkerSettings): boole
 
 function coerce(value: number | undefined, fallback: number, min: number, max: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(Math.max(value, min), max) : fallback
+}
+
+// Anything that isn't a boolean is a malformed payload, so it takes the default —
+// the same bar the numbers are held to. Reading truthiness instead would turn a
+// stored `"false"` or `0` into "on", silently flipping a setting the player turned off.
+function coerceToggle(value: boolean | undefined, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }

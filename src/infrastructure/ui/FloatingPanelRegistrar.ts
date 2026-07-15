@@ -27,15 +27,21 @@ export class FloatingPanelRegistrar {
     }
     for (const name of LIFECYCLE_HOOKS) {
       const hook = hooks[name]
-      if (typeof hook === 'function') {
-        try {
-          hook(() => {
-            this.register()
-            this.onLifecycle()
-          })
-        } catch {
-          /* a missing hook is fine */
-        }
+      if (typeof hook !== 'function') {
+        continue
+      }
+      try {
+        // Called on `hooks` rather than detached: the game is free to implement a
+        // hook as a method that needs its receiver.
+        hook.call(hooks, () => {
+          this.register()
+          this.onLifecycle()
+        })
+      } catch (error) {
+        // The guard above already covers a missing hook, so anything landing here is
+        // real — and silence would mean the panel quietly stops re-registering on a
+        // city load, the very thing these hooks exist to prevent.
+        logger.warn(`could not install the ${name} hook:`, error)
       }
     }
   }

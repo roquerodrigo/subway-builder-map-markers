@@ -17,7 +17,8 @@ function newId(): string {
 export function createMarker(position: Coordinate, order: number): Marker {
   return {
     id: newId(),
-    position,
+    // Copied, so a caller reusing its coordinate array can't move the marker later.
+    position: [position[0], position[1]],
     color: DEFAULT_MARKER_COLOR,
     icon: DEFAULT_MARKER_ICON,
     label: `Marker ${order}`,

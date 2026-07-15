@@ -1,6 +1,8 @@
 import type { MarkerStore } from '../../application/MarkerStore'
 import type { SubwayBuilderApi } from '../../shared/game/SubwayBuilderApi'
 
+import { logger } from '../../shared/Logger'
+
 // Re-sync the store to the loaded save on every hook that can change which save is
 // active. onGameSaved is included because the first autosave of a brand-new game is
 // when the save becomes identifiable.
@@ -20,16 +22,12 @@ export class SaveScopeRegistrar {
   ) {}
 
   install(): void {
-    const hooks = this.api.hooks
-    if (!hooks) {
-      return
-    }
-    this.on(hooks.onGameInit, () => {
+    this.on('onGameInit', () => {
       this.store.startNewGame()
       void this.resync()
     })
     for (const name of SYNC_HOOKS) {
-      this.on(hooks[name], () => void this.resync())
+      this.on(name, () => void this.resync())
     }
   }
 
@@ -39,14 +37,20 @@ export class SaveScopeRegistrar {
     void this.resync()
   }
 
-  private on(hook: ((callback: (arg?: string) => void) => void) | undefined, handler: () => void): void {
+  private on(name: string, handler: () => void): void {
+    const hooks = this.api.hooks
+    const hook = hooks?.[name]
     if (typeof hook !== 'function') {
       return
     }
     try {
-      hook(handler)
-    } catch {
-      /* a missing or failing hook is fine */
+      // Called on `hooks` rather than detached: the game is free to implement a hook
+      // as a method that needs its receiver.
+      hook.call(hooks, handler)
+    } catch (error) {
+      // A missing hook is already handled above, so this is a real failure — and it
+      // means the markers stop following the save, which is the whole job here.
+      logger.warn(`could not install the ${name} hook:`, error)
     }
   }
 

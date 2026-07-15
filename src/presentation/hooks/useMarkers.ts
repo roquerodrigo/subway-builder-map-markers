@@ -28,6 +28,9 @@ export function useMarkers(store: MarkerStore): MarkersSnapshot {
 // (and reset when the map places the marker).
 export function usePlacement(controller: MapMarkersController): boolean {
   const [placing, setPlacing] = React.useState<boolean>(() => controller.isPlacing())
-  React.useEffect(() => controller.onPlacementChange(setPlacing), [controller])
+  React.useEffect(() => {
+    setPlacing(controller.isPlacing())
+    return controller.onPlacementChange(setPlacing)
+  }, [controller])
   return placing
 }
