@@ -158,3 +158,27 @@ describe('snapToSpacing', () => {
     expect(candidate).toEqual(CANDIDATE)
   })
 })
+
+// Two neighbors sitting in nearly the same direction put their rings' crossing far
+// off to the side: the snap used to fling the marker over 1.2 km — further than the
+// spacing it was snapping to — from a drop that was only metres off.
+describe('snapToSpacing never flings the marker', () => {
+  it('keeps a near-collinear pair from throwing the marker across the map', () => {
+    const neighbors = [neighborAt(TARGET_METERS * 0.92, 0), neighborAt(TARGET_METERS * 1.08, 0)]
+    const snapped = snapToSpacing(CANDIDATE, neighbors, TARGET_METERS)
+    expect(haversineMeters(CANDIDATE, snapped)).toBeLessThan(TARGET_METERS * 0.11)
+  })
+
+  it('never moves the marker further than the snap tolerance, at any bearing', () => {
+    for (let bearing = 0; bearing < 360; bearing += 5) {
+      for (const spread of [0, 2, 5, 15, 45, 90, 150]) {
+        const neighbors = [
+          neighborAt(TARGET_METERS * 0.93, bearing),
+          neighborAt(TARGET_METERS * 1.07, bearing + spread),
+        ]
+        const snapped = snapToSpacing(CANDIDATE, neighbors, TARGET_METERS)
+        expect(haversineMeters(CANDIDATE, snapped)).toBeLessThan(TARGET_METERS * 0.12)
+      }
+    }
+  })
+})

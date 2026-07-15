@@ -24,9 +24,6 @@ export function snapToSpacing(candidate: Coordinate, neighbors: Coordinate[], ta
   }
   const [originLng, originLat] = candidate
   const metersPerLng = METERS_PER_DEGREE_LAT * Math.cos((originLat * Math.PI) / 180)
-  if (metersPerLng === 0) {
-    return candidate
-  }
   const toCoordinate = (point: LocalPoint): Coordinate => [
     originLng + point.x / metersPerLng,
     originLat + point.y / METERS_PER_DEGREE_LAT,
@@ -47,7 +44,12 @@ export function snapToSpacing(candidate: Coordinate, neighbors: Coordinate[], ta
   }
   if (withinReach.length >= 2) {
     const vertex = latticeVertex(withinReach[0].point, withinReach[1].point, targetMeters)
-    if (vertex) {
+    // Two rings meet at a point that can sit nowhere near where the marker was
+    // dropped: when the neighbors nearly line up, their rings cross off to the side,
+    // and the "snap" would fling the marker further than the spacing itself. A
+    // magnet may only ever tidy up a near-miss, so a vertex beyond the tolerance is
+    // rejected in favour of the single-ring pull, which can't move further than that.
+    if (vertex && Math.hypot(vertex.x, vertex.y) <= tolerance) {
       return toCoordinate(vertex)
     }
   }
@@ -55,13 +57,10 @@ export function snapToSpacing(candidate: Coordinate, neighbors: Coordinate[], ta
 }
 
 // Pull the origin (the dragged marker, at 0,0) onto the ring of radius `target`
-// around `neighbor`, keeping the current bearing.
+// around `neighbor`, keeping the current bearing. The caller only ever passes a
+// neighbor already within the tolerance of that ring, so the move is small.
 function radialSnap(neighbor: LocalPoint, target: number): LocalPoint {
-  const distance = Math.hypot(neighbor.x, neighbor.y)
-  if (distance === 0) {
-    return { x: target, y: 0 }
-  }
-  const scale = 1 - target / distance
+  const scale = 1 - target / Math.hypot(neighbor.x, neighbor.y)
   return { x: neighbor.x * scale, y: neighbor.y * scale }
 }
 
