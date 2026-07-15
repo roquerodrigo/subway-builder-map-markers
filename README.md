@@ -79,6 +79,8 @@ npm run install-mod    # build + copy the mod into the game
 npm run debug          # relaunch the game with DevTools + a CDP port
 npm run play           # install-mod, then debug
 npm run package        # build the release assets into dist/release/
+npm test               # vitest run
+npm run test:coverage  # vitest + coverage (90% floor)
 npm run typecheck      # tsc --noEmit (strict)
 npm run lint           # eslint .
 ```
@@ -98,6 +100,7 @@ subway-builder-map-markers/
 │   ├── package-release.mjs #  the ZIP + standalone manifest for a release
 │   ├── debug.mjs         #   relaunch the game with DevTools + a CDP port
 │   └── cdp-eval.mjs      #   evaluate JS in the running renderer (inspection)
+├── tests/                # vitest + jsdom, mirrors src/ (90% coverage floor)
 ├── docs/
 │   ├── game-internals.md       # the game internals this mod uses
 │   └── inspecting-the-game.md  # how to inspect/drive the running game over CDP

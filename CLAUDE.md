@@ -108,8 +108,10 @@ timer. See `docs/game-internals.md`.
 
 ```bash
 npm run build        # esbuild → dist/index.js
-npm run typecheck    # tsc --noEmit (strict)
+npm run typecheck    # tsc --noEmit (strict; covers tests/ too)
 npm run lint         # eslint . (npm run lint:fix to auto-fix)
+npm test             # vitest run
+npm run test:coverage # vitest + v8 coverage (fails under 90%)
 npm run install-mod  # build + copy into the game (enable in Settings > Mods)
 npm run package      # build + the two release assets in dist/release/
 npm run debug        # launch the game + CDP :9222
@@ -117,7 +119,20 @@ node scripts/cdp-eval.mjs --file dist/index.js   # re-inject the bundle live
 ```
 
 Run `npm run typecheck` and `npm run lint` before trusting a build — esbuild strips
-types without checking them. To re-inject over CDP, the IIFE re-runs
+types without checking them.
+
+**Tests** live in `tests/`, mirroring `src/`, and run on **vitest + jsdom** with a 90%
+coverage floor enforced in `vitest.config.ts` (CI fails under it). Two things make the
+setup non-obvious:
+
+- **React comes from the host**, read off `window.SubwayBuilderAPI` at module-init, so
+  `tests/setup.ts` installs it there *before* any mod module is imported — hence
+  `setupFiles` rather than a per-test hook.
+- **Vitest 4 transforms with oxc, not esbuild**, so the JSX pragma lives under `oxc:`
+  in the config. esbuild options there are silently ignored.
+
+The map layers are covered against a fake `GlMap`; nothing in the suite needs the real
+game. To re-inject over CDP, the IIFE re-runs
 `registrar.register()` (unregister-first), so the toolbar button updates in place.
 
 > ### ⚠️ Quitting the game pops a blocking "save progress?" dialog — kill it, don't `quit`

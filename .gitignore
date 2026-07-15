@@ -12,3 +12,6 @@ dist/
 
 # JetBrains IDE
 .idea/
+
+# Test coverage output
+coverage/
