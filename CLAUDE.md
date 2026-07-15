@@ -73,7 +73,7 @@ for a brand-new game. See **Marker scoping** below.
 - `persistence/ModStorage.ts` — a small async KV over **localStorage** (`api.storage`
   is a no-op in this build — see `docs/game-internals.md`).
 - `persistence/MarkerRepository.ts` — the marker buckets over `ModStorage`, defensive
-  reads, plus the one-time migration off the old per-city bucket.
+  reads that heal a malformed payload rather than throwing.
 - `save/SaveScopeRegistrar.ts` — wires the save/load hooks to the store.
 - `store/GameSession.ts` — optional `saveId()` / `cityCode()` reads. `ui/react.ts`
   (host-React shim), `ui/FloatingPanelRegistrar.ts` (`addFloatingPanel` + lifecycle
