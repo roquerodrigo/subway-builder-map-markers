@@ -1,11 +1,10 @@
 name: Release
 
-# Manual for now: run it from the Actions tab. To let release-please groom the
-# release PR on every merge, add the push trigger:
-#
-#   push:
-#     branches: [main]
+# Runs on every push to main, where it grooms the release PR; merging that PR is
+# what cuts the release. workflow_dispatch stays for re-running it by hand.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -184,10 +184,10 @@ and the workflow then attaches the Railyard assets (`npm run package`) to the re
 Versions stay in step across `package.json`, `src/manifest.json` (via `extra-files`)
 and `.release-please-manifest.json` — never bump them by hand.
 
-The workflow is **manual** (`workflow_dispatch`) until the push trigger is added. The
-`0.0.0` baseline in `.release-please-manifest.json` means "nothing released yet", so
-the first run proposes exactly **1.0.0** rather than bumping off the version already
-in `package.json`.
+The workflow runs on **every push to main**, where it only grooms the release PR —
+merging that PR is what tags the release and uploads the assets. The `0.0.0` baseline
+in `.release-please-manifest.json` means "nothing released yet", so the first release
+is exactly **1.0.0** rather than a bump off the version already in `package.json`.
 
 > `include-component-in-tag: false` is load-bearing: the default prefixes tags with
 > the package name (`subway-builder-map-markers-v1.0.0`), and the registry only
