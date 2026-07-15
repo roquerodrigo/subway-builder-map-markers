@@ -258,28 +258,17 @@ describe('InfluenceRadiusLayer', () => {
     })
   })
 
-  describe('clearing', () => {
-    it('empties the source it drew into', () => {
+  describe('emptying', () => {
+    it('empties the source when the last marker goes', () => {
       const layer = makeLayer()
       layer.render([makeMarker()], makeSettings(), 1)
-      layer.clear()
+      layer.render([], makeSettings(), 1)
       expect(drawnData().features).toHaveLength(0)
-    })
-
-    it('is a no-op before anything has been drawn', () => {
-      expect(() => makeLayer().clear()).not.toThrow()
     })
 
     it('is a no-op while the game has no map', () => {
       currentMap = null
-      expect(() => makeLayer().clear()).not.toThrow()
-    })
-
-    it('survives a map whose style is gone', () => {
-      const layer = makeLayer()
-      layer.render([makeMarker()], makeSettings(), 1)
-      map.breakGetSource = true
-      expect(() => layer.clear()).not.toThrow()
+      expect(() => makeLayer().render([makeMarker()], makeSettings(), 1)).not.toThrow()
     })
   })
 })

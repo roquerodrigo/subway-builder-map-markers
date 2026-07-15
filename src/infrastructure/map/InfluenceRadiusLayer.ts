@@ -9,7 +9,6 @@ const SOURCE_ID = 'sbmm-radius'
 const FILL_LAYER = 'sbmm-radius-fill'
 const LINE_LAYER = 'sbmm-radius-line'
 const GUIDE_LAYER = 'sbmm-radius-guide'
-const EMPTY = { features: [] as unknown[], type: 'FeatureCollection' }
 const RETRY_DELAY_MS = 120
 const MAX_RETRIES = 25
 // Coverage is one flat union — every circle goes into a single MultiPolygon
@@ -50,15 +49,6 @@ export class InfluenceRadiusLayer {
   private showInfluence = false
 
   constructor(private readonly getMap: () => GlMap | null) {}
-
-  clear(): void {
-    this.markers = []
-    try {
-      this.getMap()?.getSource(SOURCE_ID)?.setData(EMPTY)
-    } catch {
-      /* map not ready — nothing drawn yet */
-    }
-  }
 
   // `opacity` scales every layer's own opacity, so the circles fade with the badges
   // (the controller resolves it from the panel state) and keep their relative weight.

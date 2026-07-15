@@ -65,13 +65,6 @@ export class MarkerLayer {
     private readonly callbacks: MarkerLayerCallbacks,
   ) {}
 
-  clear(): void {
-    for (const element of this.elements.values()) {
-      element.root.remove()
-    }
-    this.elements.clear()
-  }
-
   render(markers: Marker[], selectedId: null | string, view: MarkerLayerView): void {
     this.markers = markers
     this.selectedId = selectedId

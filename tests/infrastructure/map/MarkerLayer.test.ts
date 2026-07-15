@@ -225,19 +225,11 @@ describe('MarkerLayer', () => {
       expect(badgesOf(map)[0].label.textContent).toBe('Alpha')
     })
 
-    it('drops every badge on clear', () => {
+    it('drops the badges of markers that are gone', () => {
       const layer = makeLayer()
       layer.render([makeMarker(), makeMarker({ id: 'beta' })], null, OPEN)
-      layer.clear()
+      layer.render([], null, OPEN)
       expect(overlayOf(map).children).toHaveLength(0)
-    })
-
-    it('redraws the badges after a clear', () => {
-      const layer = makeLayer()
-      layer.render([makeMarker()], null, OPEN)
-      layer.clear()
-      layer.render([makeMarker()], null, OPEN)
-      expect(badgesOf(map)).toHaveLength(1)
     })
   })
 

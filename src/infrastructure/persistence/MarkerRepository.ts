@@ -50,20 +50,13 @@ export class MarkerRepository {
       }
       return []
     }
-    return sanitizeMarkers(payload.markers)
+    return payload.markers.map(sanitize).filter((marker): marker is Marker => marker !== null)
   }
 
   private async write(key: string, markers: Marker[]): Promise<void> {
     const payload: StoredPayload = { markers, version: SCHEMA_VERSION }
     await this.storage.set(key, payload)
   }
-}
-
-function sanitizeMarkers(value: unknown): Marker[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-  return value.map(sanitize).filter((marker): marker is Marker => marker !== null)
 }
 
 // Accept only well-formed markers; heal a missing/unknown icon or field so a
