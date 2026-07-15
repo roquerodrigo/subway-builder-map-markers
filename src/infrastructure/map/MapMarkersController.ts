@@ -19,7 +19,9 @@ type PlacementListener = (active: boolean) => void
 export class MapMarkersController {
   private markerLayer: MarkerLayer
   private panelOpen = false
-  private pendingPlacement: ((event: MapMouseEvent) => void) | null = null
+  // Held with the map it was registered on: cancelling has to unregister from that
+  // instance, which is not necessarily the one getMap() hands back later.
+  private pendingPlacement: null | { handler: (event: MapMouseEvent) => void, map: GlMap } = null
   private placementActive = false
   private placementListeners = new Set<PlacementListener>()
   private radiusLayer: InfluenceRadiusLayer
@@ -46,9 +48,12 @@ export class MapMarkersController {
     if (!this.placementActive) {
       return
     }
-    const map = this.map()
-    if (this.pendingPlacement && map) {
-      map.off('click', this.pendingPlacement)
+    // Unregister from the map the click was armed on. Going through getMap() here
+    // would skip the unregister whenever it returns null or a new instance — as it
+    // does around a city load — leaving a live handler that drops a marker the
+    // player already backed out of.
+    if (this.pendingPlacement) {
+      this.pendingPlacement.map.off('click', this.pendingPlacement.handler)
     }
     this.pendingPlacement = null
     this.placementActive = false
@@ -119,7 +124,7 @@ export class MapMarkersController {
       this.notifyPlacement()
       this.store.add([event.lngLat.lng, event.lngLat.lat])
     }
-    this.pendingPlacement = handler
+    this.pendingPlacement = { handler, map }
     map.once('click', handler)
     this.notifyPlacement()
   }
