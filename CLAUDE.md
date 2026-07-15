@@ -44,7 +44,8 @@ rules can run.
 ## Code map (`src/`)
 
 **`domain/marker/`** — pure, no map/DOM/window.
-- `Marker.ts` — the `Marker` entity + `INFLUENCE_RADIUS_METERS` (1000).
+- `Marker.ts` — the `Marker` entity + `OPTIMAL_SPACING_FACTOR` (√3, the ideal
+  center-to-center spacing as a multiple of the radius).
 - `MarkerPalette.ts` — the color swatches. `MarkerIconSet.ts` — the icon set as
   **primitive SVG element descriptors** (not raw path strings), so both renderers
   can build them safely. `MarkerFactory.ts` — `createMarker` (id + defaults).
@@ -91,8 +92,7 @@ the panel, starts the controller.
 Markers are keyed by the loaded save (`save:<currentSaveInfo.id>`), with a per-city
 cache (`recent:<cityCode>`) for continuity: the game reopens the **newest autosave** —
 a different file every session — so a save's own bucket is usually empty on load and
-inherits from the cache. Load order: **own bucket → city cache → legacy bucket →
-empty**. A brand-new game starts empty and **clears the city cache** so it can't
+inherits from the cache. Load order: **own bucket → city cache → empty**. A brand-new game starts empty and **clears the city cache** so it can't
 inherit the previous game's markers. `docs/game-internals.md` §4–6 has the why, the
 hook behaviors and the accepted trade-off.
 

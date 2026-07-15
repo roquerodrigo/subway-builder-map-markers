@@ -162,8 +162,7 @@ rather than throwing.
 Markers are keyed by the loaded save (`save:<currentSaveInfo.id>`), with a per-city
 cache (`recent:<cityCode>`) that gives a game continuity across sessions — needed
 because the newest autosave is a different file every time, so a save's own bucket is
-usually empty on load. Load order: **own bucket → city cache → legacy bucket →
-empty**.
+usually empty on load. Load order: **own bucket → city cache → empty**.
 
 A brand-new game (`onGameInit`) starts empty **and clears the city cache**, so it
 can't inherit the previous game's markers through it. Since `onGameInit` can fire

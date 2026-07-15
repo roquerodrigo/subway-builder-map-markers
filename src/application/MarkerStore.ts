@@ -155,8 +155,7 @@ export class MarkerStore {
     this.persist()
   }
 
-  // Save's own bucket, empty on load → inherit the city's recent markers → the
-  // one-time legacy (per-city localStorage) bucket → empty.
+  // Save's own bucket, empty on load → inherit the city's recent markers → empty.
   private async loadMarkers(saveId: null | string, city: null | string): Promise<Marker[]> {
     if (saveId) {
       const own = await this.repository.loadForSave(saveId)
@@ -165,11 +164,7 @@ export class MarkerStore {
       }
     }
     if (city) {
-      const recent = await this.repository.loadRecent(city)
-      if (recent.length > 0) {
-        return recent
-      }
-      return this.repository.takeLegacy(city)
+      return this.repository.loadRecent(city)
     }
     return []
   }
