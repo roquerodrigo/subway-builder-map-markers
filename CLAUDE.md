@@ -193,6 +193,11 @@ is exactly **1.0.0** rather than a bump off the version already in `package.json
 > the package name (`subway-builder-map-markers-v1.0.0`), and the registry only
 > accepts `X.Y.Z` or `vX.Y.Z`.
 
+The repo has **"Allow GitHub Actions to create and approve pull requests"** switched on
+(`can_approve_pull_request_reviews`); it's off by default and release-please fails with
+`GitHub Actions is not permitted to create or approve pull requests` without it. The
+workflow's own `permissions:` block is separate and doesn't cover this.
+
 ## Publishing to Railyard
 
 `npm run package` writes the two assets a release needs to `dist/release/`: the flat
