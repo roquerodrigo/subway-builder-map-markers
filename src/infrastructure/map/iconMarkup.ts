@@ -1,4 +1,4 @@
-import type { MarkerIcon } from '../../domain/marker/MarkerIconSet'
+import type { MarkerIcon } from '@/domain/marker/MarkerIconSet'
 
 // Serialize a marker icon to an SVG markup string for the imperative map badge
 // (the React panel renders the same descriptors through IconGlyph instead). Only

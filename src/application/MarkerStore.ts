@@ -1,9 +1,9 @@
-import type { Marker } from '../domain/marker/Marker'
-import type { MarkerRepository } from '../infrastructure/persistence/MarkerRepository'
-import type { GameSession } from '../infrastructure/store/GameSession'
-import type { Coordinate } from '../shared/game/Coordinate'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
+import type { GameSession } from '@/infrastructure/store/GameSession'
+import type { Coordinate } from '@/shared/game/Coordinate'
 
-import { createMarker } from '../domain/marker/MarkerFactory'
+import { createMarker } from '@/domain/marker/MarkerFactory'
 
 type Listener = () => void
 

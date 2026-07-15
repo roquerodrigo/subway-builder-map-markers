@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { Logger, logger } from '../../src/shared/Logger'
+import { Logger, logger } from '@/shared/Logger'
 
 afterEach(() => {
   vi.restoreAllMocks()

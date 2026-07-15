@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { clampStoredPanelGeometry, ensurePanelOnScreen } from '../../../src/infrastructure/ui/PanelViewport'
+import { clampStoredPanelGeometry, ensurePanelOnScreen } from '@/infrastructure/ui/PanelViewport'
 
 const STORAGE_KEY = 'floating-panel-map-markers'
 

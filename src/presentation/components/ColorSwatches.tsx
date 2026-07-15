@@ -1,5 +1,5 @@
-import { MARKER_COLORS } from '../../domain/marker/MarkerPalette'
-import { h } from '../../infrastructure/ui/react'
+import { MARKER_COLORS } from '@/domain/marker/MarkerPalette'
+import { h } from '@/infrastructure/ui/react'
 
 export interface ColorSwatchesProps {
   value: string

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MARKER_COLORS } from '../../src/domain/marker/MarkerPalette'
-import { h } from '../../src/infrastructure/ui/react'
-import { ColorSwatches } from '../../src/presentation/components/ColorSwatches'
+import { MARKER_COLORS } from '@/domain/marker/MarkerPalette'
+import { h } from '@/infrastructure/ui/react'
+import { ColorSwatches } from '@/presentation/components/ColorSwatches'
 
 describe('ColorSwatches', () => {
   it('renders one swatch per palette colour', () => {

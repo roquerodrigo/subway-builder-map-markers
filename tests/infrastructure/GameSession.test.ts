@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GameStateSnapshot, StoreCallbacks } from '../../src/shared/game/StoreCallbacks'
-import type { SubwayBuilderApi } from '../../src/shared/game/SubwayBuilderApi'
+import type { GameStateSnapshot, StoreCallbacks } from '@/shared/game/StoreCallbacks'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { GameSession } from '../../src/infrastructure/store/GameSession'
+import { GameSession } from '@/infrastructure/store/GameSession'
 
 function apiWithCityCode(cityCode: string): SubwayBuilderApi {
   return { utils: { getCityCode: () => cityCode } }

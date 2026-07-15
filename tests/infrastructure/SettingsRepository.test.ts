@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { DEFAULT_SETTINGS } from '../../src/domain/settings/MarkerSettings'
-import { SettingsRepository } from '../../src/infrastructure/persistence/SettingsRepository'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
 
 const STORAGE_KEY = 'subwaybuilder.map-markers.settings'
 

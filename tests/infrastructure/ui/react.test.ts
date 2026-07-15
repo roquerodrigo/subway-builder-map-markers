@@ -1,7 +1,7 @@
 import * as ReactModule from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { Fragment, h, isReactAvailable, React } from '../../../src/infrastructure/ui/react'
+import { Fragment, h, isReactAvailable, React } from '@/infrastructure/ui/react'
 
 const SHIM_PATH = '../../../src/infrastructure/ui/react'
 

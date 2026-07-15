@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_MARKER_COLOR, MARKER_COLORS } from '../../src/domain/marker/MarkerPalette'
+import { DEFAULT_MARKER_COLOR, MARKER_COLORS } from '@/domain/marker/MarkerPalette'
 
 describe('MARKER_COLORS', () => {
   it('offers something to choose from', () => {

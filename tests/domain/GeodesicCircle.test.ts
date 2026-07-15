@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { geodesicCircle } from '../../src/domain/marker/GeodesicCircle'
+import { geodesicCircle } from '@/domain/marker/GeodesicCircle'
 
 // Metres between two lng/lat points, independent of the implementation under test.
 function haversineMeters(a: [number, number], b: [number, number]): number {

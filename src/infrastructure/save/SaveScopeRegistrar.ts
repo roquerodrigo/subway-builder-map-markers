@@ -1,7 +1,7 @@
-import type { MarkerStore } from '../../application/MarkerStore'
-import type { SubwayBuilderApi } from '../../shared/game/SubwayBuilderApi'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { logger } from '../../shared/Logger'
+import { logger } from '@/shared/Logger'
 
 // Re-sync the store to the loaded save on every hook that can change which save is
 // active. onGameSaved is included because the first autosave of a brand-new game is

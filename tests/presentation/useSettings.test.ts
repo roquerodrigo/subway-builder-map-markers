@@ -1,11 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type { SettingsStore } from '../../src/application/SettingsStore'
-import type { MarkerSettings } from '../../src/domain/settings/MarkerSettings'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
 
-import { DEFAULT_SETTINGS } from '../../src/domain/settings/MarkerSettings'
-import { useSettings } from '../../src/presentation/hooks/useSettings'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { useSettings } from '@/presentation/hooks/useSettings'
 
 function createSettingsDouble(initial: MarkerSettings = DEFAULT_SETTINGS) {
   const listeners = new Set<() => void>()

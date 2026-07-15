@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { h } from '../../src/infrastructure/ui/react'
-import { Toggle } from '../../src/presentation/components/Toggle'
+import { h } from '@/infrastructure/ui/react'
+import { Toggle } from '@/presentation/components/Toggle'
 
 describe('Toggle', () => {
   it('renders the label and the optional description', () => {

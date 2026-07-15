@@ -1,7 +1,7 @@
-import type { SettingsStore } from '../../application/SettingsStore'
-import type { MarkerSettings } from '../../domain/settings/MarkerSettings'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
 
-import { React } from '../../infrastructure/ui/react'
+import { React } from '@/infrastructure/ui/react'
 
 // Subscribe the config tab to the shared SettingsStore so its controls reflect the
 // live settings (and any change re-renders the map layers via the controller).

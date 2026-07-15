@@ -1,6 +1,6 @@
-import type { MarkerIcon } from '../../domain/marker/MarkerIconSet'
+import type { MarkerIcon } from '@/domain/marker/MarkerIconSet'
 
-import { h } from '../../infrastructure/ui/react'
+import { h } from '@/infrastructure/ui/react'
 
 export interface IconGlyphProps {
   icon: MarkerIcon

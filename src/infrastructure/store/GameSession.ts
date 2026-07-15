@@ -1,5 +1,5 @@
-import type { StoreCallbacks } from '../../shared/game/StoreCallbacks'
-import type { SubwayBuilderApi } from '../../shared/game/SubwayBuilderApi'
+import type { StoreCallbacks } from '@/shared/game/StoreCallbacks'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
 // What the mod knows about the active game: which save is loaded and which city.
 // The save id (the loaded save file) scopes markers per save; the city code scopes

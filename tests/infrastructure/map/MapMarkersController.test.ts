@@ -1,18 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MarkerSettings } from '../../../src/domain/settings/MarkerSettings'
-import type { SettingsRepository } from '../../../src/infrastructure/persistence/SettingsRepository'
-import type { SubwayBuilderApi } from '../../../src/shared/game/SubwayBuilderApi'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
+import type { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
+
+import { MarkerStore } from '@/application/MarkerStore'
+import { SettingsStore } from '@/application/SettingsStore'
+import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
+import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
+import { createModStorage } from '@/infrastructure/persistence/ModStorage'
+import { GameSession } from '@/infrastructure/store/GameSession'
+
 import type { FakeGlMap } from './fakeGlMap'
 
-import { MarkerStore } from '../../../src/application/MarkerStore'
-import { SettingsStore } from '../../../src/application/SettingsStore'
-import { OPTIMAL_SPACING_FACTOR } from '../../../src/domain/marker/Marker'
-import { DEFAULT_SETTINGS } from '../../../src/domain/settings/MarkerSettings'
-import { MapMarkersController } from '../../../src/infrastructure/map/MapMarkersController'
-import { MarkerRepository } from '../../../src/infrastructure/persistence/MarkerRepository'
-import { createModStorage } from '../../../src/infrastructure/persistence/ModStorage'
-import { GameSession } from '../../../src/infrastructure/store/GameSession'
 import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
 
 // Metres between two lng/lat points, independent of the geometry under test.

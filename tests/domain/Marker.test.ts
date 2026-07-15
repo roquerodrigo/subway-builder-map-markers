@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { OPTIMAL_SPACING_FACTOR } from '../../src/domain/marker/Marker'
+import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
 
 // The distance from an equilateral triangle's center to each of its corners,
 // computed from the corners rather than from the closed-form identity, so the

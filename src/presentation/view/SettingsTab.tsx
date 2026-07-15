@@ -1,4 +1,4 @@
-import type { SettingsStore } from '../../application/SettingsStore'
+import type { SettingsStore } from '@/application/SettingsStore'
 
 import {
   IDLE_OPACITY_STEP,
@@ -7,10 +7,10 @@ import {
   MIN_IDLE_OPACITY,
   MIN_RADIUS_METERS,
   RADIUS_STEP_METERS,
-} from '../../domain/settings/MarkerSettings'
-import { h } from '../../infrastructure/ui/react'
-import { Toggle } from '../components/Toggle'
-import { useSettings } from '../hooks/useSettings'
+} from '@/domain/settings/MarkerSettings'
+import { h } from '@/infrastructure/ui/react'
+import { Toggle } from '@/presentation/components/Toggle'
+import { useSettings } from '@/presentation/hooks/useSettings'
 
 export interface SettingsTabProps {
   settings: SettingsStore

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { CARD_CLASS, selectedCardStyle } from '../../src/presentation/theme'
+import { CARD_CLASS, selectedCardStyle } from '@/presentation/theme'
 
 describe('theme', () => {
   it('keeps the card spacing on the integer Tailwind steps the game ships', () => {

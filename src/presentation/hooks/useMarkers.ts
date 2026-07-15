@@ -1,8 +1,8 @@
-import type { MarkerStore } from '../../application/MarkerStore'
-import type { Marker } from '../../domain/marker/Marker'
-import type { MapMarkersController } from '../../infrastructure/map/MapMarkersController'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 
-import { React } from '../../infrastructure/ui/react'
+import { React } from '@/infrastructure/ui/react'
 
 export interface MarkersSnapshot {
   markers: Marker[]

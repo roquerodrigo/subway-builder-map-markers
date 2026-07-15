@@ -1,4 +1,4 @@
-import type { Coordinate } from '../../shared/game/Coordinate'
+import type { Coordinate } from '@/shared/game/Coordinate'
 
 const EARTH_RADIUS_METERS = 6378137
 const DEGREES = 180 / Math.PI

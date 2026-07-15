@@ -12,7 +12,7 @@ import {
   normalizeSettings,
   RADIUS_STEP_METERS,
   settingsEqual,
-} from '../../src/domain/settings/MarkerSettings'
+} from '@/domain/settings/MarkerSettings'
 
 type Settings = typeof DEFAULT_SETTINGS
 

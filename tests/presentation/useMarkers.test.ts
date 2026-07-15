@@ -1,11 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type { MarkerStore } from '../../src/application/MarkerStore'
-import type { Marker } from '../../src/domain/marker/Marker'
-import type { MapMarkersController } from '../../src/infrastructure/map/MapMarkersController'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 
-import { useMarkers, usePlacement } from '../../src/presentation/hooks/useMarkers'
+import { useMarkers, usePlacement } from '@/presentation/hooks/useMarkers'
 
 function createMarker(id: string, label: string): Marker {
   return { id, position: [-46.63, -23.55], color: '#ef4444', icon: 'station', label }

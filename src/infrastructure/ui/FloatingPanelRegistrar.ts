@@ -1,7 +1,7 @@
-import type { SubwayBuilderApi } from '../../shared/game/SubwayBuilderApi'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { logger } from '../../shared/Logger'
-import { isReactAvailable } from './react'
+import { isReactAvailable } from '@/infrastructure/ui/react'
+import { logger } from '@/shared/Logger'
 
 const PANEL_ID = 'map-markers'
 const LIFECYCLE_HOOKS = ['onGameInit', 'onCityLoad', 'onMapReady']

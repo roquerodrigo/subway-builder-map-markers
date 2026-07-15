@@ -1,4 +1,4 @@
-import type { Coordinate } from '../../shared/game/Coordinate'
+import type { Coordinate } from '@/shared/game/Coordinate'
 
 // A single map marker: a candidate location the player is sketching (a possible
 // station, an interchange, a point of interest…). Pure data — no map or DOM here.

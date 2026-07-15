@@ -1,11 +1,11 @@
-import type { Marker } from '../../domain/marker/Marker'
+import type { Marker } from '@/domain/marker/Marker'
 
-import { markerIcon } from '../../domain/marker/MarkerIconSet'
-import { h, React } from '../../infrastructure/ui/react'
-import { CARD_CLASS, selectedCardStyle } from '../theme'
-import { ColorSwatches } from './ColorSwatches'
-import { IconGlyph } from './IconGlyph'
-import { IconPicker } from './IconPicker'
+import { markerIcon } from '@/domain/marker/MarkerIconSet'
+import { h, React } from '@/infrastructure/ui/react'
+import { ColorSwatches } from '@/presentation/components/ColorSwatches'
+import { IconGlyph } from '@/presentation/components/IconGlyph'
+import { IconPicker } from '@/presentation/components/IconPicker'
+import { CARD_CLASS, selectedCardStyle } from '@/presentation/theme'
 
 export interface MarkerCardProps {
   marker: Marker

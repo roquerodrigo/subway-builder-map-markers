@@ -1,7 +1,7 @@
-import type { MarkerSettings } from '../../domain/settings/MarkerSettings'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
 
-import { DEFAULT_SETTINGS, normalizeSettings } from '../../domain/settings/MarkerSettings'
-import { logger } from '../../shared/Logger'
+import { DEFAULT_SETTINGS, normalizeSettings } from '@/domain/settings/MarkerSettings'
+import { logger } from '@/shared/Logger'
 
 const STORAGE_KEY = 'subwaybuilder.map-markers.settings'
 

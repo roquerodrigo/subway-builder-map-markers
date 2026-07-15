@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MarkerIcon } from '../../../src/domain/marker/MarkerIconSet'
+import type { MarkerIcon } from '@/domain/marker/MarkerIconSet'
 
-import { markerIcon } from '../../../src/domain/marker/MarkerIconSet'
-import { iconSvgMarkup } from '../../../src/infrastructure/map/iconMarkup'
+import { markerIcon } from '@/domain/marker/MarkerIconSet'
+import { iconSvgMarkup } from '@/infrastructure/map/iconMarkup'
 
 const singleElementIcon: MarkerIcon = {
   key: 'probe',

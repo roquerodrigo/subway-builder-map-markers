@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createMarker } from '../../src/domain/marker/MarkerFactory'
-import { DEFAULT_MARKER_ICON } from '../../src/domain/marker/MarkerIconSet'
-import { DEFAULT_MARKER_COLOR } from '../../src/domain/marker/MarkerPalette'
+import { createMarker } from '@/domain/marker/MarkerFactory'
+import { DEFAULT_MARKER_ICON } from '@/domain/marker/MarkerIconSet'
+import { DEFAULT_MARKER_COLOR } from '@/domain/marker/MarkerPalette'
 
 const POSITION: [number, number] = [-46.633, -23.55]
 const FALLBACK_ID = /^m-[0-9a-z]+-[0-9a-z]+$/

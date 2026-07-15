@@ -1,6 +1,6 @@
-import { MARKER_ICONS } from '../../domain/marker/MarkerIconSet'
-import { h } from '../../infrastructure/ui/react'
-import { IconGlyph } from './IconGlyph'
+import { MARKER_ICONS } from '@/domain/marker/MarkerIconSet'
+import { h } from '@/infrastructure/ui/react'
+import { IconGlyph } from '@/presentation/components/IconGlyph'
 
 export interface IconPickerProps {
   value: string

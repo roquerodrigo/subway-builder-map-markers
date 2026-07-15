@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { Marker } from '../../src/domain/marker/Marker'
-import type { ModStorage } from '../../src/infrastructure/persistence/ModStorage'
+import type { Marker } from '@/domain/marker/Marker'
+import type { ModStorage } from '@/infrastructure/persistence/ModStorage'
 
-import { DEFAULT_MARKER_ICON } from '../../src/domain/marker/MarkerIconSet'
-import { MarkerRepository } from '../../src/infrastructure/persistence/MarkerRepository'
+import { DEFAULT_MARKER_ICON } from '@/domain/marker/MarkerIconSet'
+import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
 
 interface MemoryStorage extends ModStorage {
   entries: Map<string, unknown>

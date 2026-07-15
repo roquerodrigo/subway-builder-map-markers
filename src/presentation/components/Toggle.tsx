@@ -1,4 +1,4 @@
-import { h } from '../../infrastructure/ui/react'
+import { h } from '@/infrastructure/ui/react'
 
 export interface ToggleProps {
   label: string

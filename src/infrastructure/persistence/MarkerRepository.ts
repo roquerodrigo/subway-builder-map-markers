@@ -1,8 +1,8 @@
-import type { Marker } from '../../domain/marker/Marker'
-import type { ModStorage } from './ModStorage'
+import type { Marker } from '@/domain/marker/Marker'
+import type { ModStorage } from '@/infrastructure/persistence/ModStorage'
 
-import { markerIcon } from '../../domain/marker/MarkerIconSet'
-import { logger } from '../../shared/Logger'
+import { markerIcon } from '@/domain/marker/MarkerIconSet'
+import { logger } from '@/shared/Logger'
 
 const SCHEMA_VERSION = 1
 const SAVE_PREFIX = 'save:'

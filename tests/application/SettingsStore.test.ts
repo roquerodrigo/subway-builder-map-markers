@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { SettingsStore } from '../../src/application/SettingsStore'
-import { DEFAULT_SETTINGS } from '../../src/domain/settings/MarkerSettings'
-import { SettingsRepository } from '../../src/infrastructure/persistence/SettingsRepository'
+import { SettingsStore } from '@/application/SettingsStore'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
 
 const PERSIST_DEBOUNCE_MS = 250
 

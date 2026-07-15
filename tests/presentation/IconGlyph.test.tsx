@@ -1,11 +1,11 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import type { MarkerIcon } from '../../src/domain/marker/MarkerIconSet'
+import type { MarkerIcon } from '@/domain/marker/MarkerIconSet'
 
-import { markerIcon } from '../../src/domain/marker/MarkerIconSet'
-import { h } from '../../src/infrastructure/ui/react'
-import { IconGlyph } from '../../src/presentation/components/IconGlyph'
+import { markerIcon } from '@/domain/marker/MarkerIconSet'
+import { h } from '@/infrastructure/ui/react'
+import { IconGlyph } from '@/presentation/components/IconGlyph'
 
 const stationIcon = markerIcon('station')
 const targetIcon = markerIcon('target')

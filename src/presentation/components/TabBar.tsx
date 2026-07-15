@@ -1,4 +1,4 @@
-import { h } from '../../infrastructure/ui/react'
+import { h } from '@/infrastructure/ui/react'
 
 export type PanelTab = 'markers' | 'settings'
 

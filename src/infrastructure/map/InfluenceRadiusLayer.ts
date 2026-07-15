@@ -1,9 +1,9 @@
-import type { Marker } from '../../domain/marker/Marker'
-import type { MarkerSettings } from '../../domain/settings/MarkerSettings'
-import type { GlMap } from '../../shared/game/GlMap'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
+import type { GlMap } from '@/shared/game/GlMap'
 
-import { geodesicCircle } from '../../domain/marker/GeodesicCircle'
-import { OPTIMAL_SPACING_FACTOR } from '../../domain/marker/Marker'
+import { geodesicCircle } from '@/domain/marker/GeodesicCircle'
+import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
 
 const SOURCE_ID = 'sbmm-radius'
 const FILL_LAYER = 'sbmm-radius-fill'

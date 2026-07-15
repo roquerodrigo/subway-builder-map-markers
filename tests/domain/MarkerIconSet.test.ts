@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_MARKER_ICON, MARKER_ICONS, markerIcon } from '../../src/domain/marker/MarkerIconSet'
+import { DEFAULT_MARKER_ICON, MARKER_ICONS, markerIcon } from '@/domain/marker/MarkerIconSet'
 
 const PRIMITIVE_TAGS = ['circle', 'line', 'path', 'polyline', 'rect']
 

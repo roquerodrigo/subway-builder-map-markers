@@ -41,6 +41,12 @@ fully optional.
 **TypeScript version**: pinned to **5.9** (not 7) so typescript-eslint's type-aware
 rules can run.
 
+**Imports use the `@/*` alias for anything under `src/`** (`@/domain/marker/Marker`),
+never `../../`. It's declared once in `tsconfig.json` (`paths`), which esbuild reads on
+its own; vite doesn't, so `vitest.config.ts` mirrors it in `resolve.alias`. Tests reach
+into the mod the same way, and only keep a relative path for a helper sitting next to
+them. The alias is a compile-time concept: it's gone from `dist/index.js`.
+
 ## Code map (`src/`)
 
 **`domain/marker/`** — pure, no map/DOM/window.

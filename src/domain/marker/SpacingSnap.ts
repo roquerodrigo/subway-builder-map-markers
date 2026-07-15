@@ -1,4 +1,4 @@
-import type { Coordinate } from '../../shared/game/Coordinate'
+import type { Coordinate } from '@/shared/game/Coordinate'
 
 // How close (as a fraction of the ideal distance) the dragged marker must be to a
 // neighbor's spacing ring before it snaps onto it.

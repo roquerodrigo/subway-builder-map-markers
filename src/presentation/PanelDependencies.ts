@@ -1,7 +1,7 @@
-import type { MarkerStore } from '../application/MarkerStore'
-import type { SettingsStore } from '../application/SettingsStore'
-import type { MapMarkersController } from '../infrastructure/map/MapMarkersController'
-import type { SubwayBuilderApi } from '../shared/game/SubwayBuilderApi'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
 // Everything the panel needs, injected by the composition root (main.tsx) so the
 // presentation layer never reaches into window/map/store directly. Marker reads

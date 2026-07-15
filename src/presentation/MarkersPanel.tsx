@@ -1,12 +1,12 @@
-import type { PanelTab } from './components/TabBar'
-import type { PanelDependencies } from './PanelDependencies'
+import type { PanelTab } from '@/presentation/components/TabBar'
+import type { PanelDependencies } from '@/presentation/PanelDependencies'
 
-import { ensurePanelOnScreen } from '../infrastructure/ui/PanelViewport'
-import { h, React } from '../infrastructure/ui/react'
-import { MarkerCard } from './components/MarkerCard'
-import { TabBar } from './components/TabBar'
-import { useMarkers, usePlacement } from './hooks/useMarkers'
-import { SettingsTab } from './view/SettingsTab'
+import { ensurePanelOnScreen } from '@/infrastructure/ui/PanelViewport'
+import { h, React } from '@/infrastructure/ui/react'
+import { MarkerCard } from '@/presentation/components/MarkerCard'
+import { TabBar } from '@/presentation/components/TabBar'
+import { useMarkers, usePlacement } from '@/presentation/hooks/useMarkers'
+import { SettingsTab } from '@/presentation/view/SettingsTab'
 
 // The panel content. Two tabs: the marker list (add/edit/remove, all wired to the
 // shared MarkerStore) and the global display settings (the SettingsStore). Both

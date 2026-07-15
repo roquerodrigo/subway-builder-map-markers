@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MarkerStore } from '../../src/application/MarkerStore'
-import { MarkerRepository } from '../../src/infrastructure/persistence/MarkerRepository'
-import { createModStorage } from '../../src/infrastructure/persistence/ModStorage'
+import { MarkerStore } from '@/application/MarkerStore'
+import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
+import { createModStorage } from '@/infrastructure/persistence/ModStorage'
 
 type Session = { cityCode(): null | string, saveId(): null | string }
 

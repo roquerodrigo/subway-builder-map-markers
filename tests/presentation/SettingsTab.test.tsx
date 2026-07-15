@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SettingsStore } from '../../src/application/SettingsStore'
-import type { MarkerSettings } from '../../src/domain/settings/MarkerSettings'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
 
-import { DEFAULT_SETTINGS } from '../../src/domain/settings/MarkerSettings'
-import { h } from '../../src/infrastructure/ui/react'
-import { SettingsTab } from '../../src/presentation/view/SettingsTab'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { h } from '@/infrastructure/ui/react'
+import { SettingsTab } from '@/presentation/view/SettingsTab'
 
 function createSettingsDouble(initial: Partial<MarkerSettings> = {}) {
   const listeners = new Set<() => void>()

@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Marker } from '../../../src/domain/marker/Marker'
-import type { MarkerSettings } from '../../../src/domain/settings/MarkerSettings'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
+
+import { geodesicCircle } from '@/domain/marker/GeodesicCircle'
+import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
+import { InfluenceRadiusLayer } from '@/infrastructure/map/InfluenceRadiusLayer'
+
 import type { FakeGlMap } from './fakeGlMap'
 
-import { geodesicCircle } from '../../../src/domain/marker/GeodesicCircle'
-import { OPTIMAL_SPACING_FACTOR } from '../../../src/domain/marker/Marker'
-import { InfluenceRadiusLayer } from '../../../src/infrastructure/map/InfluenceRadiusLayer'
 import { createFakeGlMap } from './fakeGlMap'
 
 const SOURCE_ID = 'sbmm-radius'

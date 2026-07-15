@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { snapToSpacing } from '../../src/domain/marker/SpacingSnap'
+import { snapToSpacing } from '@/domain/marker/SpacingSnap'
 
 const EARTH_RADIUS_METERS = 6371008.8
 const CANDIDATE: [number, number] = [-46.633, -23.55]

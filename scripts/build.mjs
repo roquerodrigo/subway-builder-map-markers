@@ -18,6 +18,8 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const options = {
   entryPoints: [path.join(projectRoot, "src", "main.tsx")],
   outfile: path.join(projectRoot, "dist", "index.js"),
+  // Pointed at explicitly so the `@/*` paths resolve from wherever this is run.
+  tsconfig: path.join(projectRoot, "tsconfig.json"),
   bundle: true,
   format: "iife", // erases top-level import/export → safe to eval as a classic script over CDP
   platform: "browser",

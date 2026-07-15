@@ -1,7 +1,7 @@
-import type { MarkerSettings } from '../domain/settings/MarkerSettings'
-import type { SettingsRepository } from '../infrastructure/persistence/SettingsRepository'
+import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
+import type { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
 
-import { normalizeSettings, settingsEqual } from '../domain/settings/MarkerSettings'
+import { normalizeSettings, settingsEqual } from '@/domain/settings/MarkerSettings'
 
 type Listener = () => void
 

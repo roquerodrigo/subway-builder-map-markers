@@ -3,9 +3,9 @@ import type { Mock } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { h } from '../../src/infrastructure/ui/react'
-import { MarkerCard } from '../../src/presentation/components/MarkerCard'
-import { selectedCardStyle } from '../../src/presentation/theme'
+import { h } from '@/infrastructure/ui/react'
+import { MarkerCard } from '@/presentation/components/MarkerCard'
+import { selectedCardStyle } from '@/presentation/theme'
 
 const marker = {
   id: 'marker-1',

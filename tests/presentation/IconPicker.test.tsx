@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MARKER_ICONS } from '../../src/domain/marker/MarkerIconSet'
-import { h } from '../../src/infrastructure/ui/react'
-import { IconPicker } from '../../src/presentation/components/IconPicker'
+import { MARKER_ICONS } from '@/domain/marker/MarkerIconSet'
+import { h } from '@/infrastructure/ui/react'
+import { IconPicker } from '@/presentation/components/IconPicker'
 
 describe('IconPicker', () => {
   it('renders one button per icon, labelled with the icon name', () => {

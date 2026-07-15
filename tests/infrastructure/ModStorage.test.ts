@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createModStorage } from '../../src/infrastructure/persistence/ModStorage'
+import { createModStorage } from '@/infrastructure/persistence/ModStorage'
 
 const PREFIX = 'subwaybuilder.map-markers.kv.'
 

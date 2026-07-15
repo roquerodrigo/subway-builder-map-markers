@@ -1,13 +1,13 @@
-import type { MarkerStore } from '../../application/MarkerStore'
-import type { SettingsStore } from '../../application/SettingsStore'
-import type { Coordinate } from '../../shared/game/Coordinate'
-import type { GlMap, MapMouseEvent } from '../../shared/game/GlMap'
-import type { SubwayBuilderApi } from '../../shared/game/SubwayBuilderApi'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { Coordinate } from '@/shared/game/Coordinate'
+import type { GlMap, MapMouseEvent } from '@/shared/game/GlMap'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { OPTIMAL_SPACING_FACTOR } from '../../domain/marker/Marker'
-import { snapToSpacing } from '../../domain/marker/SpacingSnap'
-import { InfluenceRadiusLayer } from './InfluenceRadiusLayer'
-import { MarkerLayer } from './MarkerLayer'
+import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
+import { snapToSpacing } from '@/domain/marker/SpacingSnap'
+import { InfluenceRadiusLayer } from '@/infrastructure/map/InfluenceRadiusLayer'
+import { MarkerLayer } from '@/infrastructure/map/MarkerLayer'
 
 type PlacementListener = (active: boolean) => void
 

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Marker } from '../../src/domain/marker/Marker'
-import type { GameStateSnapshot } from '../../src/shared/game/StoreCallbacks'
+import type { Marker } from '@/domain/marker/Marker'
+import type { GameStateSnapshot } from '@/shared/game/StoreCallbacks'
 
-import { MarkerStore } from '../../src/application/MarkerStore'
-import { MarkerRepository } from '../../src/infrastructure/persistence/MarkerRepository'
-import { createModStorage } from '../../src/infrastructure/persistence/ModStorage'
-import { GameSession } from '../../src/infrastructure/store/GameSession'
+import { MarkerStore } from '@/application/MarkerStore'
+import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
+import { createModStorage } from '@/infrastructure/persistence/ModStorage'
+import { GameSession } from '@/infrastructure/store/GameSession'
 
 const PERSIST_DEBOUNCE_MS = 250
 

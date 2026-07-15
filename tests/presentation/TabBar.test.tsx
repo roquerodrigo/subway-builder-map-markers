@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { h } from '../../src/infrastructure/ui/react'
-import { TabBar } from '../../src/presentation/components/TabBar'
+import { h } from '@/infrastructure/ui/react'
+import { TabBar } from '@/presentation/components/TabBar'
 
 describe('TabBar', () => {
   it('renders one button per tab', () => {

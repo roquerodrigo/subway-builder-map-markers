@@ -1,16 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MarkerStore } from '../../src/application/MarkerStore'
-import type { SettingsStore } from '../../src/application/SettingsStore'
-import type { Marker } from '../../src/domain/marker/Marker'
-import type { MapMarkersController } from '../../src/infrastructure/map/MapMarkersController'
-import type { PanelDependencies } from '../../src/presentation/PanelDependencies'
-import type { SubwayBuilderApi } from '../../src/shared/game/SubwayBuilderApi'
+import type { MarkerStore } from '@/application/MarkerStore'
+import type { SettingsStore } from '@/application/SettingsStore'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
+import type { PanelDependencies } from '@/presentation/PanelDependencies'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { DEFAULT_SETTINGS } from '../../src/domain/settings/MarkerSettings'
-import { h } from '../../src/infrastructure/ui/react'
-import { createMarkersPanel } from '../../src/presentation/MarkersPanel'
+import { DEFAULT_SETTINGS } from '@/domain/settings/MarkerSettings'
+import { h } from '@/infrastructure/ui/react'
+import { createMarkersPanel } from '@/presentation/MarkersPanel'
 
 function createMarker(id: string, label: string): Marker {
   return { id, position: [-46.63, -23.55], color: '#ef4444', icon: 'station', label }

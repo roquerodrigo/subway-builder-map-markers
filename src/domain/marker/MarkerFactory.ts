@@ -1,8 +1,8 @@
-import type { Coordinate } from '../../shared/game/Coordinate'
-import type { Marker } from './Marker'
+import type { Marker } from '@/domain/marker/Marker'
+import type { Coordinate } from '@/shared/game/Coordinate'
 
-import { DEFAULT_MARKER_ICON } from './MarkerIconSet'
-import { DEFAULT_MARKER_COLOR } from './MarkerPalette'
+import { DEFAULT_MARKER_ICON } from '@/domain/marker/MarkerIconSet'
+import { DEFAULT_MARKER_COLOR } from '@/domain/marker/MarkerPalette'
 
 function newId(): string {
   const uuid = globalThis.crypto?.randomUUID?.()

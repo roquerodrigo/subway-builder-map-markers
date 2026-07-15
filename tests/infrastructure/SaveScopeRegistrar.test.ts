@@ -2,13 +2,13 @@ import type { Mock } from 'vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SubwayBuilderApi } from '../../src/shared/game/SubwayBuilderApi'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
-import { MarkerStore } from '../../src/application/MarkerStore'
-import { MarkerRepository } from '../../src/infrastructure/persistence/MarkerRepository'
-import { createModStorage } from '../../src/infrastructure/persistence/ModStorage'
-import { SaveScopeRegistrar } from '../../src/infrastructure/save/SaveScopeRegistrar'
-import { GameSession } from '../../src/infrastructure/store/GameSession'
+import { MarkerStore } from '@/application/MarkerStore'
+import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
+import { createModStorage } from '@/infrastructure/persistence/ModStorage'
+import { SaveScopeRegistrar } from '@/infrastructure/save/SaveScopeRegistrar'
+import { GameSession } from '@/infrastructure/store/GameSession'
 
 type GameHooks = NonNullable<SubwayBuilderApi['hooks']>
 

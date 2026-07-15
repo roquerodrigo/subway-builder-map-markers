@@ -2,11 +2,13 @@ import type { Mock } from 'vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Marker } from '../../../src/domain/marker/Marker'
-import type { MarkerLayerCallbacks, MarkerLayerView } from '../../../src/infrastructure/map/MarkerLayer'
+import type { Marker } from '@/domain/marker/Marker'
+import type { MarkerLayerCallbacks, MarkerLayerView } from '@/infrastructure/map/MarkerLayer'
+
+import { MarkerLayer } from '@/infrastructure/map/MarkerLayer'
+
 import type { FakeGlMap } from './fakeGlMap'
 
-import { MarkerLayer } from '../../../src/infrastructure/map/MarkerLayer'
 import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
 
 const OPEN: MarkerLayerView = { opacity: 1, showLabels: true }

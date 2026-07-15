@@ -2,7 +2,7 @@ import type { Mock } from 'vitest'
 
 import { vi } from 'vitest'
 
-import type { GlMap, LngLat, LngLatLike, MapMouseEvent, Point } from '../../../src/shared/game/GlMap'
+import type { GlMap, LngLat, LngLatLike, MapMouseEvent, Point } from '@/shared/game/GlMap'
 
 // Pixels per degree. The default keeps the numbers in a test readable (a marker at
 // lng 1 sits at x 100), but makes one pixel worth a kilometre on the ground — so a

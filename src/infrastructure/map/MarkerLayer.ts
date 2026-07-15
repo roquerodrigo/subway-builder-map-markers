@@ -1,9 +1,9 @@
-import type { Marker } from '../../domain/marker/Marker'
-import type { Coordinate } from '../../shared/game/Coordinate'
-import type { GlMap } from '../../shared/game/GlMap'
+import type { Marker } from '@/domain/marker/Marker'
+import type { Coordinate } from '@/shared/game/Coordinate'
+import type { GlMap } from '@/shared/game/GlMap'
 
-import { markerIcon } from '../../domain/marker/MarkerIconSet'
-import { iconSvgMarkup } from './iconMarkup'
+import { markerIcon } from '@/domain/marker/MarkerIconSet'
+import { iconSvgMarkup } from '@/infrastructure/map/iconMarkup'
 
 const CONTAINER_CLASS = 'sbmm-marker-overlay'
 const BADGE_SIZE = 32

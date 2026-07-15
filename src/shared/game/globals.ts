@@ -1,5 +1,5 @@
-import type { StoreCallbacks } from './StoreCallbacks'
-import type { SubwayBuilderApi } from './SubwayBuilderApi'
+import type { StoreCallbacks } from '@/shared/game/StoreCallbacks'
+import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
 declare global {
   interface Window {

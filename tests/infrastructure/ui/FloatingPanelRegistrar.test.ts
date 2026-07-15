@@ -2,7 +2,7 @@ import type { MockInstance } from 'vitest'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { FloatingPanelRegistrar } from '../../../src/infrastructure/ui/FloatingPanelRegistrar'
+import { FloatingPanelRegistrar } from '@/infrastructure/ui/FloatingPanelRegistrar'
 
 const LIFECYCLE_HOOKS = ['onGameInit', 'onCityLoad', 'onMapReady']
 
