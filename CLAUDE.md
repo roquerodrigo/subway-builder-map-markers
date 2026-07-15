@@ -150,6 +150,23 @@ types without checking them. To re-inject over CDP, the IIFE re-runs
 - **No `window.confirm`/`alert`** — a native dialog blocks the renderer and can't be
   dismissed over CDP. The "remove all" uses an inline two-click confirm instead.
 
+## Commits & releases
+
+**Commits follow [Conventional Commits](https://www.conventionalcommits.org)** —
+release-please parses the subject to decide the next version, so an unprefixed commit
+is invisible to it. Keep the prose style; just prefix the subject: `feat:` (minor),
+`fix:` (patch), `docs:`/`refactor:`/`ci:`/`chore:` (no release).
+
+`.github/workflows/release.yml` runs release-please, which opens a release PR
+gathering those commits; merging it bumps the version, writes `CHANGELOG.md`, tags,
+and the workflow then attaches the Railyard assets (`npm run package`) to the release.
+Versions stay in step across `package.json`, `src/manifest.json` (via `extra-files`)
+and `.release-please-manifest.json` — never bump them by hand.
+
+The workflow is **manual** (`workflow_dispatch`) until the push trigger is added.
+Since no `v1.0.0` tag exists yet, the first run proposes **1.1.0** (the initial commit
+is a `feat:`); tag `v1.0.0` on that commit first if the first release should be 1.0.0.
+
 ## Publishing to Railyard
 
 `npm run package` writes the two assets a release needs to `dist/release/`: the flat
