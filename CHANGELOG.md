@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.0.0...v1.0.1) (2026-07-18)
+
+
+### Miscellaneous Chores
+
+* support Subway Builder 1.4.12 ([#2](https://github.com/roquerodrigo/subway-builder-map-markers/issues/2)) ([5a5e608](https://github.com/roquerodrigo/subway-builder-map-markers/commit/5a5e608faf1cb7047454f32e333593230b858e68))
+
 ## 1.0.0 (2026-07-15)
 
 
