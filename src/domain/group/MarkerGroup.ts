@@ -3,7 +3,10 @@
 // DOM. Markers point at a group by id (`Marker.groupId`); the group carries only its
 // own display state. `color` is optional (null when unset) and lets a folder echo its
 // line color in the panel. `hidden` drives whether the group's markers draw on the map.
+// `collapsed` is the panel's own open/closed state, persisted so a folder stays folded
+// across sessions.
 export interface MarkerGroup {
+  collapsed: boolean
   color: null | string
   hidden: boolean
   id: string

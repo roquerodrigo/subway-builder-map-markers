@@ -8,7 +8,7 @@ import { h } from '@/infrastructure/ui/react'
 import { GroupSection } from '@/presentation/components/GroupSection'
 
 function group(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
+  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
 }
 
 function marker(id: string): Marker {

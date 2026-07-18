@@ -153,6 +153,7 @@ function sanitizeGroup(value: unknown): MarkerGroup | null {
   }
 
   return {
+    collapsed: typeof candidate.collapsed === 'boolean' ? candidate.collapsed : false,
     color: typeof candidate.color === 'string' ? candidate.color : null,
     hidden: typeof candidate.hidden === 'boolean' ? candidate.hidden : false,
     id: candidate.id,

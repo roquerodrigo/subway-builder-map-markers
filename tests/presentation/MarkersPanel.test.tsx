@@ -56,7 +56,7 @@ function createStoreDouble(initial: Marker[] = [], initialGroups: MarkerGroup[] 
 
   return {
     addGroup: vi.fn((name: string) => {
-      const group: MarkerGroup = { color: null, hidden: false, id: `g${groups.length + 1}`, name }
+      const group: MarkerGroup = { collapsed: false, color: null, hidden: false, id: `g${groups.length + 1}`, name }
       groups = [...groups, group]
       notify()
 
@@ -85,6 +85,10 @@ function createStoreDouble(initial: Marker[] = [], initialGroups: MarkerGroup[] 
 
       return () => listeners.delete(listener)
     },
+    toggleGroupCollapsed: vi.fn((id: string) => {
+      groups = groups.map((group) => (group.id === id ? { ...group, collapsed: !group.collapsed } : group))
+      notify()
+    }),
     toggleGroupHidden: vi.fn((id: string) => {
       groups = groups.map((group) => (group.id === id ? { ...group, hidden: !group.hidden } : group))
       notify()
@@ -291,7 +295,7 @@ describe('MarkersPanel folders', () => {
     return { ...createMarker(id, label), groupId }
   }
 
-  const line1: MarkerGroup = { color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
+  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
 
   it('offers no folder affordance on an empty board', () => {
     renderPanel()
@@ -338,5 +342,17 @@ describe('MarkersPanel folders', () => {
     const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
     fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
     expect(store.assignToGroup).toHaveBeenCalledWith('a', null)
+  })
+
+  it('persists a collapse through the store rather than local state', () => {
+    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse folder' }))
+    expect(store.toggleGroupCollapsed).toHaveBeenCalledWith('g1')
+  })
+
+  it('renders a folder folded when the store says it is collapsed', () => {
+    renderPanel([grouped('a', 'Central', 'g1')], [{ ...line1, collapsed: true }])
+    expect(screen.queryByLabelText('Marker name')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Expand folder' })).toBeDefined()
   })
 })

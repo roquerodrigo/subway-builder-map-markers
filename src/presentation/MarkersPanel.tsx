@@ -23,7 +23,6 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
     const placing = usePlacement(controller)
     const [tab, setTab] = React.useState<PanelTab>('markers')
     const [confirmClear, setConfirmClear] = React.useState(false)
-    const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
     const rootRef = React.useRef<HTMLDivElement>(null)
 
     // On open, make sure the game didn't restore the window off-screen (a stale
@@ -61,19 +60,6 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
       }
       store.clear()
       setConfirmClear(false)
-    }
-
-    const toggleCollapsed = (id: string): void => {
-      setCollapsed((prev) => {
-        const next = new Set(prev)
-        if (next.has(id)) {
-          next.delete(id)
-        } else {
-          next.add(id)
-        }
-
-        return next
-      })
     }
 
     const markerCard = (marker: Marker, withFolders: boolean): JSX.Element => (
@@ -116,7 +102,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
             null}
           {sections.map((section) => (
             <GroupSection
-              collapsed={collapsed.has(section.group.id)}
+              collapsed={section.group.collapsed}
               group={section.group}
               groups={groups}
               key={section.group.id}
@@ -127,7 +113,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
               onRemove={(id) => store.remove(id)}
               onRename={(name) => store.renameGroup(section.group.id, name)}
               onSelect={(id) => store.select(id)}
-              onToggleCollapsed={() => toggleCollapsed(section.group.id)}
+              onToggleCollapsed={() => store.toggleGroupCollapsed(section.group.id)}
               onToggleHidden={() => store.toggleGroupHidden(section.group.id)}
               onUpdate={(id, patch) => store.update(id, patch)}
               selectedId={selectedId}

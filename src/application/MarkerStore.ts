@@ -146,6 +146,21 @@ export class MarkerStore {
     return this.selectedId
   }
 
+  setGroupCollapsed(id: string, collapsed: boolean): void {
+    let changed = false
+    this.groupList = this.groupList.map((group) => {
+      if (group.id !== id || group.collapsed === collapsed) {
+        return group
+      }
+      changed = true
+
+      return { ...group, collapsed }
+    })
+    if (changed) {
+      this.commit()
+    }
+  }
+
   setGroupHidden(id: string, hidden: boolean): void {
     let changed = false
     this.groupList = this.groupList.map((group) => {
@@ -244,6 +259,13 @@ export class MarkerStore {
     this.notify()
     if (loaded.markers.length > 0 || loaded.groups.length > 0) {
       this.persist() // seed this save's buckets + the city cache
+    }
+  }
+
+  toggleGroupCollapsed(id: string): void {
+    const group = this.groupList.find((candidate) => candidate.id === id)
+    if (group) {
+      this.setGroupCollapsed(id, !group.collapsed)
     }
   }
 
