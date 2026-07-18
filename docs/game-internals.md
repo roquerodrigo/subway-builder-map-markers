@@ -8,9 +8,10 @@ same install that mod targets, game 1.4.x); verify with live probes before
 trusting it in a new version.
 
 This mod is deliberately light on internals: it draws its own overlay on the map
-and owns its own state. It never edits routes, tracks, trains or stations, so none
-of the fragile route/crossover/train machinery the auto-lines mod needs applies
-here.
+and owns its own state. It never edits routes, tracks or trains, so none of the
+fragile route/crossover/train machinery the auto-lines mod needs applies here. It
+edits **stations** only through one opt-in path — naming a just-placed station after a
+nearby marker (§7), off by default.
 
 ---
 
@@ -172,3 +173,40 @@ next sync inherits the old markers.
 
 The trade-off this accepts: loading an **old** save that predates the mod (no bucket
 of its own) inherits whatever that city last had, rather than opening empty.
+
+---
+
+## 7. Naming a station from a marker (the one write to game state)
+
+The opt-in "name stations from markers" setting renames a station the player builds
+inside a marker's influence area. Discovered live over CDP against the running RMSP
+game (game 1.4.x); verify before trusting in a new version.
+
+**Station shape** (`store.getState().stations[i]`): `{ id, name, coords, buildType,
+stNodeIds, trackIds, … }`. `coords` is **`[lng, lat]`** — the same order a marker
+position uses. `buildType` is `"blueprint"` while planned and `"constructed"` once
+built.
+
+**`updateStationName(id, name)` cannot set an arbitrary name.** Called with a custom
+string it **re-derives** the name from nearby streets and ignores the argument (live:
+`updateStationName(id, "Santa Clara")` produced `"Rua Itiúba"`). The only way to set a
+custom name is to commit the whole stations array with that station's `name` field
+changed via **`setStations(next)`** — the same chokepoint auto-lines wraps for name
+cleaning. `setStations(next)` **does** hold a custom name (verified live).
+
+**When a station enters state.** Placing a blueprint fires, in order:
+1. `onBlueprintPlaced(blueprints)` — passes **track** blueprints (`id` like
+   `…@@1`, `coords` as segment pairs, `buildType:"blueprint"`); the station is **not in
+   `stations` yet**. Useless for renaming the station.
+2. `setStations(next)` — the new station enters `stations` with its real id,
+   `buildType:"blueprint"` and an auto name. **This is the moment to rename.**
+3. `onStationBuilt` — later, on construction (`buildType` → `"constructed"`).
+
+So `StationNamer` **wraps `setStations`** (not a hook): on each call it renames a
+station whose `buildType` is a fresh `"blueprint"` (new to the previous array) or which
+just left `"blueprint"` (blueprint→constructed, in case the game re-derives the name at
+construction). A **loaded** station is `"constructed"` and new to the array but not a
+blueprint, so it is left alone — that `buildType` gate is what keeps a city load from
+renaming every covered station. The wrap is idempotent (a `WeakSet` of already-wrapped
+functions) and re-applied on `onCityLoad`/`onGameLoaded` in case the store hands back a
+fresh action.

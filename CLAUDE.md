@@ -12,13 +12,18 @@ small **DDD** codebase under `src/` and **bundled by esbuild into one IIFE**
 runtime (never bundled). Conventions mirror the sibling mod
 `subway-builder-auto-lines`.
 
-Unlike auto-lines, this mod **never touches routes, tracks, trains or stations** —
-it only draws its own overlay on the map and owns its own state. So none of the
-fragile route/crossover/train internals apply here; the game surfaces it needs are the
+Markers can be organized into **folders** (one per line, say), each foldable and
+hideable on its own; and, as an **opt-in** setting, a station the player builds inside
+a marker's influence area is **renamed to that marker's label**.
+
+Unlike auto-lines, this mod **never touches routes, tracks or trains**, and it edits
+**stations only** through that one opt-in naming path (off by default) — so none of the
+fragile route/crossover/train internals apply here. The game surfaces it needs are the
 **map** (`api.utils.getMap()`), the **floating panel** (`api.ui.addFloatingPanel`) and
-the **save/load hooks** (`api.hooks.*`). The internal store is read **only** for the
-loaded save's id and the city code — to scope markers to the current game — and is
-fully optional.
+the **save/load + build hooks** (`api.hooks.*`). The internal store is read for the
+loaded save's id and the city code (to scope the board to the current game) and, only
+when station naming is on, wrapped to rename a just-placed station — all optional, so a
+missing handle just degrades gracefully.
 
 ## Layout
 
@@ -57,13 +62,23 @@ them. The alias is a compile-time concept: it's gone from `dist/index.js`.
   can build them safely. `MarkerFactory.ts` — `createMarker` (id + defaults).
 - `GeodesicCircle.ts` — `geodesicCircle(center, meters)`: a true geographic circle
   polygon (destination-point formula) so the radius scales with zoom.
+- `StationNaming.ts` — pure `stationNameFromMarkers(position, markers, radiusMeters)`:
+  the nearest named marker whose influence area (haversine) covers a point, for the
+  opt-in station-naming feature.
+
+**`domain/group/`** — the folders. `MarkerGroup.ts` (a folder: id, name, optional
+color, `hidden`, `collapsed`), `MarkerGroupFactory.ts` (`createGroup`),
+`GroupPartition.ts` (`partitionByGroup` splits markers into their folders; a dangling
+`groupId` falls back to ungrouped, so a marker is never lost).
 
 **`application/`** — `MarkerStore.ts`: the **single source of truth**. Holds the
-markers + selection, notifies subscribers on every change, and (debounced) persists
-to the current save's bucket. **Both** the React panel and the imperative map
+markers, folders and selection, notifies subscribers on every change, and (debounced)
+persists to the current save's buckets. **Both** the React panel and the imperative map
 badges subscribe here, so a drag on the map and an edit in the panel can't diverge.
-`sync()` (re)loads the markers for whatever save is active; `startNewGame()` resets
-for a brand-new game. See **Marker scoping** below.
+`visibleMarkers()` drops the markers of hidden folders (what the map draws); `sync()`
+(re)loads markers + folders for whatever save is active; `startNewGame()` resets for a
+brand-new game. `SettingsStore.ts` holds the global display settings (incl. the
+`nameStationsFromMarkers` opt-in). See **Marker scoping** below.
 
 **`infrastructure/`** — the only code that touches the map/window/storage/React.
 - `map/MarkerLayer.ts` — the **draggable DOM badges** on `getCanvasContainer()`,
@@ -79,19 +94,25 @@ for a brand-new game. See **Marker scoping** below.
 - `persistence/ModStorage.ts` — a small async KV over **localStorage** (`api.storage`
   is a no-op in this build — see `docs/game-internals.md`).
 - `persistence/MarkerRepository.ts` — the marker buckets over `ModStorage`, defensive
-  reads that heal a malformed payload rather than throwing.
+  reads that heal a malformed payload rather than throwing. Folders live in **separate
+  keys** (`groups:save:` / `groups:recent:`), so an existing marker bucket loads
+  unchanged (no schema migration).
+- `game/StationNamer.ts` — the opt-in station naming: **wraps the store's
+  `setStations`** and renames a station the player places inside a marker's area (see
+  **Station naming** below). The only code that writes to the game's own state.
 - `save/SaveScopeRegistrar.ts` — wires the save/load hooks to the store.
 - `store/GameSession.ts` — optional `saveId()` / `cityCode()` reads. `ui/react.ts`
   (host-React shim), `ui/FloatingPanelRegistrar.ts` (`addFloatingPanel` + lifecycle
   re-register, which also calls `controller.syncToMap()`).
 
 **`presentation/`** — the React panel (function components; hooks required).
-`MarkersPanel.tsx` (a factory `createMarkersPanel(deps)`), `components/`
-(`MarkerCard`, `ColorSwatches`, `IconPicker`, `IconGlyph`), `hooks/useMarkers.ts`
-(subscribes to the store + placement state).
+`MarkersPanel.tsx` (a factory `createMarkersPanel(deps)`; groups markers by folder),
+`components/` (`MarkerCard` with a folder picker, `GroupSection` = a folder's header +
+cards, `ColorSwatches`, `IconPicker`, `IconGlyph`, `Toggle`), `view/SettingsTab.tsx`,
+`hooks/useMarkers.ts` (subscribes to the store: markers + folders + placement state).
 
 **`main.tsx`** — composition root: guards `SubwayBuilderAPI`, wires deps, registers
-the panel, starts the controller.
+the panel, starts the controller, installs `SaveScopeRegistrar` and `StationNamer`.
 
 ## Marker scoping — markers belong to a save, not a city
 
@@ -100,7 +121,24 @@ cache (`recent:<cityCode>`) for continuity: the game reopens the **newest autosa
 a different file every session — so a save's own bucket is usually empty on load and
 inherits from the cache. Load order: **own bucket → city cache → empty**. A brand-new game starts empty and **clears the city cache** so it can't
 inherit the previous game's markers. `docs/game-internals.md` §4–6 has the why, the
-hook behaviors and the accepted trade-off.
+hook behaviors and the accepted trade-off. Folders persist next to the markers, in
+their own `groups:*` keys, loaded from the same bucket.
+
+## Station naming — the one place the mod edits the game
+
+Opt-in (`nameStationsFromMarkers`, **off by default** — it changes the game's own
+stations). When on, `StationNamer` **wraps the store's `setStations`** (the chokepoint
+where a station enters state) and, for a station whose `buildType` is a fresh
+`"blueprint"` or is crossing from blueprint to `"constructed"`, sets its `name` to the
+nearest visible marker whose influence area covers it. Renaming at `setStations` (not
+the `onStationBuilt` hook) means the name appears the instant the **blueprint is placed**,
+before construction. Two hard-won facts (`docs/game-internals.md` §7):
+
+- **`updateStationName(id, name)` can't set an arbitrary name** — it re-derives from
+  nearby streets and ignores the string. The only way to set a custom name is to commit
+  the stations array with that station's `name` changed (`setStations`).
+- A **loaded** station is `"constructed"`, so the `buildType` gate leaves it alone; only
+  fresh placements are renamed, and once built the player can rename freely.
 
 ## The map instance is fetched fresh, never cached
 
@@ -170,6 +208,13 @@ game. To re-inject over CDP, the IIFE re-runs
 - **Don't cache the map instance** (see above).
 - **No `window.confirm`/`alert`** — a native dialog blocks the renderer and can't be
   dismissed over CDP. The "remove all" uses an inline two-click confirm instead.
+- **`updateStationName` doesn't set a custom name** — it re-derives from nearby streets.
+  Set a name by committing the stations array via `setStations` (see **Station naming**).
+- **`reloadMods` stacks the mod** (a fresh bootstrap per call, orphaning the old
+  stores/wrappers) and an orphan can persist **stale state** on the next autosave (this
+  bit us: hidden-folder flags and a shrunken marker count got written to a save). For
+  any live check that reads/writes persisted state, **restart the game** (`npm run
+  debug`) for a single clean bootstrap rather than re-injecting over CDP.
 
 ## Commits & releases
 

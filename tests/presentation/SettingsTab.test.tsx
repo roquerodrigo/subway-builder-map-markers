@@ -115,7 +115,8 @@ describe('SettingsTab toggles', () => {
 
   it('renders every display toggle', () => {
     renderTab()
-    expect(screen.getAllByRole('switch')).toHaveLength(toggles.length)
+    // The four always-on display toggles plus the opt-in "name stations" toggle.
+    expect(screen.getAllByRole('switch')).toHaveLength(toggles.length + 1)
   })
 
   it.each(toggles)('reflects the stored value of the %s toggle', (label, key) => {
@@ -133,5 +134,31 @@ describe('SettingsTab toggles', () => {
     const settings = renderTab({ [key]: false })
     fireEvent.click(screen.getByRole('switch', { name: label }))
     expect(settings.update).toHaveBeenCalledWith({ [key]: true })
+  })
+})
+
+describe('SettingsTab name-stations toggle', () => {
+  const label = 'Name stations from markers'
+
+  it('starts off, since it changes the game stations', () => {
+    renderTab()
+    expect(screen.getByRole('switch', { name: label }).getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('reflects the stored value when it is on', () => {
+    renderTab({ nameStationsFromMarkers: true })
+    expect(screen.getByRole('switch', { name: label }).getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('turns on through the store', () => {
+    const settings = renderTab()
+    fireEvent.click(screen.getByRole('switch', { name: label }))
+    expect(settings.update).toHaveBeenCalledWith({ nameStationsFromMarkers: true })
+  })
+
+  it('turns off through the store', () => {
+    const settings = renderTab({ nameStationsFromMarkers: true })
+    fireEvent.click(screen.getByRole('switch', { name: label }))
+    expect(settings.update).toHaveBeenCalledWith({ nameStationsFromMarkers: false })
   })
 })

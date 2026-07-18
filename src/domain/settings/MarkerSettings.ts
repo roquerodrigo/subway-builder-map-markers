@@ -3,6 +3,10 @@
 // toggles the config tab edits. Pure data.
 export interface MarkerSettings {
   idleOpacity: number
+  // When on, a station the player builds inside a marker's influence area is renamed
+  // to that marker's label. Off by default: it changes the game's own stations, so the
+  // player opts in.
+  nameStationsFromMarkers: boolean
   radiusMeters: number
   showInfluence: boolean
   showLabels: boolean
@@ -27,6 +31,7 @@ export const IDLE_OPACITY_STEP = 0.05
 
 export const DEFAULT_SETTINGS: MarkerSettings = {
   idleOpacity: DEFAULT_IDLE_OPACITY,
+  nameStationsFromMarkers: false,
   radiusMeters: DEFAULT_RADIUS_METERS,
   showInfluence: true,
   showLabels: true,
@@ -39,6 +44,7 @@ export const DEFAULT_SETTINGS: MarkerSettings = {
 export function normalizeSettings(value: null | Partial<MarkerSettings> | undefined): MarkerSettings {
   return {
     idleOpacity: coerce(value?.idleOpacity, DEFAULT_IDLE_OPACITY, MIN_IDLE_OPACITY, MAX_IDLE_OPACITY),
+    nameStationsFromMarkers: coerceToggle(value?.nameStationsFromMarkers, false),
     radiusMeters: coerce(value?.radiusMeters, DEFAULT_RADIUS_METERS, MIN_RADIUS_METERS, MAX_RADIUS_METERS),
     showInfluence: coerceToggle(value?.showInfluence, true),
     showLabels: coerceToggle(value?.showLabels, true),
