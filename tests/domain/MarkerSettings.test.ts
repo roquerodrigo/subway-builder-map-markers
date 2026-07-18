@@ -22,6 +22,7 @@ const TOGGLE_KEYS = ['showInfluence', 'showLabels', 'showSpacingGuide', 'snapToS
 // field at a time.
 const OTHER_SETTINGS: Settings = {
   idleOpacity: 0.9,
+  nameStationsFromMarkers: true,
   radiusMeters: 900,
   showInfluence: false,
   showLabels: false,
@@ -51,6 +52,10 @@ describe('DEFAULT_SETTINGS', () => {
     for (const key of TOGGLE_KEYS) {
       expect(DEFAULT_SETTINGS[key]).toBe(true)
     }
+  })
+
+  it('keeps the station-naming opt-in off by default', () => {
+    expect(DEFAULT_SETTINGS.nameStationsFromMarkers).toBe(false)
   })
 
   // A step that doesn't divide the range would leave the slider unable to reach the
@@ -149,6 +154,18 @@ describe('normalizeSettings', () => {
 
   it.each(TOGGLE_KEYS)('leaves %s on when it was stored on', (key) => {
     expect(normalizeSettings({ [key]: true })[key]).toBe(true)
+  })
+
+  it('defaults the station-naming opt-in to off, and reads a stored boolean back', () => {
+    expect(normalizeSettings({}).nameStationsFromMarkers).toBe(false)
+    expect(normalizeSettings({ nameStationsFromMarkers: undefined }).nameStationsFromMarkers).toBe(false)
+    expect(normalizeSettings({ nameStationsFromMarkers: true }).nameStationsFromMarkers).toBe(true)
+    expect(normalizeSettings({ nameStationsFromMarkers: false }).nameStationsFromMarkers).toBe(false)
+  })
+
+  it('drops a non-boolean station-naming opt-in back to off', () => {
+    const stored = { nameStationsFromMarkers: 'yes' } as unknown as Settings
+    expect(normalizeSettings(stored).nameStationsFromMarkers).toBe(false)
   })
 
   it('normalizes an already normalized object to itself', () => {

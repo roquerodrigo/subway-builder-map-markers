@@ -1,5 +1,6 @@
 import { MarkerStore } from '@/application/MarkerStore'
 import { SettingsStore } from '@/application/SettingsStore'
+import { StationNamer } from '@/infrastructure/game/StationNamer'
 import { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
 import { createModStorage } from '@/infrastructure/persistence/ModStorage'
@@ -24,11 +25,13 @@ function bootstrap(): void {
     return
   }
 
-  const session = new GameSession(api, window.__subwayBuilder_storeCallbacks__ ?? null)
+  const storeCallbacks = window.__subwayBuilder_storeCallbacks__ ?? null
+  const session = new GameSession(api, storeCallbacks)
   const repository = new MarkerRepository(createModStorage())
   const store = new MarkerStore(repository, session)
   const settings = new SettingsStore(new SettingsRepository())
   const controller = new MapMarkersController(api, store, settings)
+  const stationNamer = new StationNamer(storeCallbacks, store, settings)
 
   // Pre-clamp any stale saved window position so the panel opens on-screen (and the
   // game's own position state stays consistent); re-checked on each lifecycle hook,
@@ -46,6 +49,7 @@ function bootstrap(): void {
   controller.start()
   saveScope.install()
   saveScope.syncNow()
+  stationNamer.install(api)
   logger.log('mod loaded.')
 }
 

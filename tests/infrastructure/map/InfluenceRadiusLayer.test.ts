@@ -36,6 +36,7 @@ function makeMarker(overrides: Partial<Marker> = {}): Marker {
 function makeSettings(overrides: Partial<MarkerSettings> = {}): MarkerSettings {
   return {
     idleOpacity: 0.5,
+    nameStationsFromMarkers: false,
     radiusMeters: 500,
     showInfluence: true,
     showLabels: true,

@@ -91,6 +91,12 @@ export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
           label="Show names"
           onChange={(value) => settings.update({ showLabels: value })}
         />
+        <Toggle
+          checked={current.nameStationsFromMarkers}
+          description="A station you build inside a marker's area takes that marker's name"
+          label="Name stations from markers"
+          onChange={(value) => settings.update({ nameStationsFromMarkers: value })}
+        />
       </div>
     </div>
   )
