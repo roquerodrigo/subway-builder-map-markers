@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.0.1...v1.1.0) (2026-07-18)
+
+
+### Features
+
+* group markers into folders that hide as a unit ([a6e35c4](https://github.com/roquerodrigo/subway-builder-map-markers/commit/a6e35c4e1b0bd981196b67c5eda3789e6b582a29))
+* name a station from the marker where it is placed ([3db1987](https://github.com/roquerodrigo/subway-builder-map-markers/commit/3db19879e0f842134b3cb02854ed21d77847f0b6))
+* persist each folder's open/closed state ([c4ae8bd](https://github.com/roquerodrigo/subway-builder-map-markers/commit/c4ae8bd5c1f056cfc05f8b8b75ca1bbc076569a5))
+
+
+### Miscellaneous Chores
+
+* widen the subway-builder range to any 1.4.x ([80f14c6](https://github.com/roquerodrigo/subway-builder-map-markers/commit/80f14c66a3dd92897520c6fffe21157f352e3dac))
+
 ## [1.0.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.0.0...v1.0.1) (2026-07-18)
 
 
