@@ -176,7 +176,10 @@ game. To re-inject over CDP, the IIFE re-runs
 **Commits follow [Conventional Commits](https://www.conventionalcommits.org)** —
 release-please parses the subject to decide the next version, so an unprefixed commit
 is invisible to it. Keep the prose style; just prefix the subject: `feat:` (minor),
-`fix:` (patch), `docs:`/`refactor:`/`ci:`/`chore:` (no release).
+`fix:`/`chore:` (patch), `docs:`/`refactor:`/`ci:` (no release). `chore:` is a
+releasable type here on purpose — `release-please-config.json` lists it under
+`changelog-sections` (unhidden), so a lone `chore:` such as a compatibility bump still
+cuts a patch release instead of being dropped.
 
 `.github/workflows/release.yml` runs release-please, which opens a release PR
 gathering those commits; merging it bumps the version, writes `CHANGELOG.md`, tags,
