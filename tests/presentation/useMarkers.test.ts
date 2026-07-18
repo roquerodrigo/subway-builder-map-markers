@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { MarkerStore } from '@/application/MarkerStore'
+import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
 import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 
@@ -33,13 +34,19 @@ function createMarker(id: string, label: string): Marker {
 function createStoreDouble(initial: Marker[] = []) {
   const listeners = new Set<() => void>()
   let markers = initial
+  let groups: MarkerGroup[] = []
   let selectedId: null | string = null
   const notify = (): void => listeners.forEach((listener) => listener())
 
   return {
     all: () => markers,
+    groups: () => groups,
     listenerCount: () => listeners.size,
     selected: () => selectedId,
+    setGroups: (next: MarkerGroup[]) => {
+      groups = next
+      notify()
+    },
     setMarkers: (next: Marker[]) => {
       markers = next
       notify()
@@ -76,6 +83,14 @@ describe('useMarkers', () => {
     const { result } = renderHook(() => useMarkers(store as unknown as MarkerStore))
     act(() => store.setSelected('a'))
     expect(result.current.selectedId).toBe('a')
+  })
+
+  it('re-renders with the folders when the store notifies', () => {
+    const store = createStoreDouble([createMarker('a', 'Central')])
+    const { result } = renderHook(() => useMarkers(store as unknown as MarkerStore))
+    expect(result.current.groups).toEqual([])
+    act(() => store.setGroups([{ color: null, hidden: false, id: 'g1', name: 'Line 1' }]))
+    expect(result.current.groups.map((group) => group.name)).toEqual(['Line 1'])
   })
 
   it('subscribes once and unsubscribes on unmount', () => {
