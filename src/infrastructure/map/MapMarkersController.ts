@@ -151,8 +151,12 @@ export class MapMarkersController {
   private renderLayers(): void {
     const settings = this.settings.get()
     const opacity = this.panelOpen ? 1 : settings.idleOpacity
-    this.markerLayer.render(this.store.all(), this.store.selected(), { opacity, showLabels: settings.showLabels })
-    this.radiusLayer.render(this.store.all(), settings, opacity)
+    // The map draws only visible markers — a hidden folder's markers drop off here
+    // while staying in the panel — so the badges and their influence circles share the
+    // same set.
+    const markers = this.store.visibleMarkers()
+    this.markerLayer.render(markers, this.store.selected(), { opacity, showLabels: settings.showLabels })
+    this.radiusLayer.render(markers, settings, opacity)
   }
 
   // Magnetic placement aid: pull a dragged marker onto the ideal spacing (√3·R) from
@@ -164,7 +168,7 @@ export class MapMarkersController {
       return candidate
     }
     const neighbors = this.store
-      .all()
+      .visibleMarkers()
       .filter((marker) => marker.id !== draggingId)
       .map((marker) => marker.position)
 

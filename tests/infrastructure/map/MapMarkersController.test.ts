@@ -409,4 +409,26 @@ describe('MapMarkersController', () => {
       expect(store.selected()).toBe(store.all()[1].id)
     })
   })
+
+  describe('hiding a folder', () => {
+    it('drops the markers of a hidden folder off the map', () => {
+      const group = store.addGroup('Line 1')
+      const marker = store.add([1, 2])
+      store.assignToGroup(marker.id, group.id)
+      controller.start()
+      expect(badgeRootsOf(map)).toHaveLength(1)
+      store.setGroupHidden(group.id, true)
+      expect(badgeRootsOf(map)).toHaveLength(0)
+    })
+
+    it('still draws ungrouped markers while a folder is hidden', () => {
+      const group = store.addGroup('Line 1')
+      const inFolder = store.add([1, 2])
+      store.assignToGroup(inFolder.id, group.id)
+      store.add([3, 4])
+      controller.start()
+      store.setGroupHidden(group.id, true)
+      expect(badgeRootsOf(map)).toHaveLength(1)
+    })
+  })
 })

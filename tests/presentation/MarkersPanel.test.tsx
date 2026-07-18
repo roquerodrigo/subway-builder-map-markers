@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MarkerStore } from '@/application/MarkerStore'
 import type { SettingsStore } from '@/application/SettingsStore'
+import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
 import type { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 import type { PanelDependencies } from '@/presentation/PanelDependencies'
@@ -46,19 +47,34 @@ function createSettingsDouble() {
   }
 }
 
-function createStoreDouble(initial: Marker[] = []) {
+function createStoreDouble(initial: Marker[] = [], initialGroups: MarkerGroup[] = []) {
   const listeners = new Set<() => void>()
   let markers = initial
+  let groups = initialGroups
   let selectedId: null | string = null
   const notify = (): void => listeners.forEach((listener) => listener())
 
   return {
+    addGroup: vi.fn((name: string) => {
+      const group: MarkerGroup = { color: null, hidden: false, id: `g${groups.length + 1}`, name }
+      groups = [...groups, group]
+      notify()
+
+      return group
+    }),
     all: () => markers,
+    assignToGroup: vi.fn(),
     clear: vi.fn(() => {
       markers = []
       notify()
     }),
+    groups: () => groups,
     remove: vi.fn(),
+    removeGroup: vi.fn((id: string) => {
+      groups = groups.filter((group) => group.id !== id)
+      notify()
+    }),
+    renameGroup: vi.fn(),
     select: vi.fn((id: null | string) => {
       selectedId = id
       notify()
@@ -69,12 +85,16 @@ function createStoreDouble(initial: Marker[] = []) {
 
       return () => listeners.delete(listener)
     },
+    toggleGroupHidden: vi.fn((id: string) => {
+      groups = groups.map((group) => (group.id === id ? { ...group, hidden: !group.hidden } : group))
+      notify()
+    }),
     update: vi.fn(),
   }
 }
 
-function renderPanel(markers: Marker[] = []) {
-  const store = createStoreDouble(markers)
+function renderPanel(markers: Marker[] = [], groups: MarkerGroup[] = []) {
+  const store = createStoreDouble(markers, groups)
   const controller = createControllerDouble()
   const settings = createSettingsDouble()
   const dependencies = {
@@ -263,5 +283,60 @@ describe('MarkersPanel remove all', () => {
     fireEvent.blur(button)
     expect(screen.getByRole('button', { name: 'Remove all (1)' })).toBeDefined()
     expect(store.clear).not.toHaveBeenCalled()
+  })
+})
+
+describe('MarkersPanel folders', () => {
+  function grouped(id: string, label: string, groupId: string): Marker {
+    return { ...createMarker(id, label), groupId }
+  }
+
+  const line1: MarkerGroup = { color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
+
+  it('offers no folder affordance on an empty board', () => {
+    renderPanel()
+    expect(screen.queryByRole('button', { name: /New folder/ })).toBeNull()
+  })
+
+  it('offers a New folder button once there are markers and creates one on click', () => {
+    const { store } = renderPanel([createMarker('a', 'Central')])
+    fireEvent.click(screen.getByRole('button', { name: /New folder/ }))
+    expect(store.addGroup).toHaveBeenCalledOnce()
+    expect(screen.getByLabelText('Folder name')).toBeDefined()
+  })
+
+  it('renders a card list flat while there are no folders', () => {
+    renderPanel([createMarker('a', 'Central')])
+    expect(screen.queryByLabelText('Folder name')).toBeNull()
+    expect(screen.queryByLabelText('Move to folder')).toBeNull()
+  })
+
+  it('groups a marker under its folder header', () => {
+    renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    expect(screen.getByLabelText<HTMLInputElement>('Folder name').value).toBe('Line 1')
+    expect(screen.getByLabelText('Marker name')).toBeDefined()
+  })
+
+  it('shows an "Ungrouped" section for markers outside every folder', () => {
+    renderPanel([grouped('a', 'Central', 'g1'), createMarker('b', 'Sé')], [line1])
+    expect(screen.getByText('Ungrouped')).toBeDefined()
+  })
+
+  it('hides a folder from its header', () => {
+    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    fireEvent.click(screen.getByRole('button', { name: 'Hide folder' }))
+    expect(store.toggleGroupHidden).toHaveBeenCalledWith('g1')
+  })
+
+  it('removes a folder from its header', () => {
+    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    fireEvent.click(screen.getByRole('button', { name: 'Remove folder' }))
+    expect(store.removeGroup).toHaveBeenCalledWith('g1')
+  })
+
+  it('moves a marker to another folder from its card', () => {
+    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
+    expect(store.assignToGroup).toHaveBeenCalledWith('a', null)
   })
 })

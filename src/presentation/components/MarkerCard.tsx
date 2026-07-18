@@ -1,3 +1,4 @@
+import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
 
 import { markerIcon } from '@/domain/marker/MarkerIconSet'
@@ -8,7 +9,11 @@ import { IconPicker } from '@/presentation/components/IconPicker'
 import { CARD_CLASS, selectedCardStyle } from '@/presentation/theme'
 
 export interface MarkerCardProps {
+  // The folders a marker can be moved into. Absent/empty hides the folder picker, so a
+  // board with no folders keeps the card unchanged.
+  groups?: MarkerGroup[]
   marker: Marker
+  onAssign?: (groupId: null | string) => void
   onFocus: () => void
   onRemove: () => void
   onSelect: () => void
@@ -16,10 +21,12 @@ export interface MarkerCardProps {
   selected: boolean
 }
 
-// One marker's controls: its badge, an editable label, color + icon pickers, the
-// 1 km radius toggle, and focus/remove actions. Selecting the card highlights the
+// One marker's controls: its badge, an editable label, color + icon pickers, an
+// optional folder picker, and focus/remove actions. Selecting the card highlights the
 // matching badge on the map (and vice-versa).
-export function MarkerCard({ marker, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps): JSX.Element {
+export function MarkerCard(
+  { groups, marker, onAssign, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps,
+): JSX.Element {
   const cardRef = React.useRef<HTMLDivElement>(null)
 
   // Selection usually starts on the map (clicking or dropping a badge), and the
@@ -93,6 +100,25 @@ export function MarkerCard({ marker, onFocus, onRemove, onSelect, onUpdate, sele
 
       <ColorSwatches onChange={(color) => onUpdate({ color })} value={marker.color} />
       <IconPicker color={marker.color} onChange={(icon) => onUpdate({ icon })} value={marker.icon} />
+
+      {groups && groups.length > 0 ?
+          (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="shrink-0">Folder</span>
+              <select
+                aria-label="Move to folder"
+                className="min-w-0 flex-1 rounded-md border border-border bg-primary/5 px-2 py-1 text-xs"
+                onChange={(event) => onAssign?.(event.target.value || null)}
+                value={marker.groupId ?? ''}
+              >
+                <option value="">No folder</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>{group.name}</option>
+                ))}
+              </select>
+            </div>
+          ) :
+        null}
     </div>
   )
 }

@@ -6,6 +6,9 @@ import type { Coordinate } from '@/shared/game/Coordinate'
 // settings, not per-marker; see domain/settings/MarkerSettings.
 export interface Marker {
   color: string
+  // The folder this marker belongs to (a MarkerGroup id), or null/absent when it sits
+  // outside any folder. Optional so a marker literal without folders stays valid.
+  groupId?: null | string
   icon: string
   id: string
   label: string

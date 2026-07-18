@@ -3,6 +3,8 @@ import type { Mock } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Marker } from '@/domain/marker/Marker'
+
 import { h } from '@/infrastructure/ui/react'
 import { MarkerCard } from '@/presentation/components/MarkerCard'
 import { selectedCardStyle } from '@/presentation/theme'
@@ -158,5 +160,58 @@ describe('MarkerCard', () => {
     const { onUpdate } = renderCard()
     fireEvent.click(screen.getByRole('button', { name: 'Highlight' }))
     expect(onUpdate).toHaveBeenCalledWith({ icon: 'star' })
+  })
+})
+
+describe('MarkerCard folder picker', () => {
+  const groups = [
+    { color: null, hidden: false, id: 'g1', name: 'Line 1' },
+    { color: null, hidden: false, id: 'g2', name: 'Line 2' },
+  ]
+
+  function renderWithFolders(markerOverrides: Partial<Marker> = {}) {
+    const onAssign = vi.fn()
+    render(
+      <MarkerCard
+        groups={groups}
+        marker={{ ...marker, ...markerOverrides }}
+        onAssign={onAssign}
+        onFocus={vi.fn()}
+        onRemove={vi.fn()}
+        onSelect={vi.fn()}
+        onUpdate={vi.fn()}
+        selected={false}
+      />,
+    )
+
+    return { onAssign }
+  }
+
+  it('offers no folder picker when there are no folders', () => {
+    renderCard()
+    expect(screen.queryByLabelText('Move to folder')).toBeNull()
+  })
+
+  it('lists every folder plus a "no folder" option', () => {
+    renderWithFolders()
+    const options = screen.getAllByRole('option').map((option) => option.textContent)
+    expect(options).toEqual(['No folder', 'Line 1', 'Line 2'])
+  })
+
+  it('reflects the folder the marker is in', () => {
+    renderWithFolders({ groupId: 'g2' })
+    expect(screen.getByLabelText<HTMLSelectElement>('Move to folder').value).toBe('g2')
+  })
+
+  it('reports a move into a folder through onAssign', () => {
+    const { onAssign } = renderWithFolders()
+    fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: 'g1' } })
+    expect(onAssign).toHaveBeenCalledWith('g1')
+  })
+
+  it('reports a move out of every folder as null', () => {
+    const { onAssign } = renderWithFolders({ groupId: 'g1' })
+    fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
+    expect(onAssign).toHaveBeenCalledWith(null)
   })
 })
