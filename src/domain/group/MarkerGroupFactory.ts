@@ -7,6 +7,7 @@ import { newId } from '@/shared/id'
 // color lets a folder carry its line color.
 export function createGroup(name: string, color: null | string = null): MarkerGroup {
   return {
+    collapsed: false,
     color,
     hidden: false,
     id: newId(),

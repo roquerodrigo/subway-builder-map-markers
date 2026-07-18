@@ -165,8 +165,8 @@ describe('MarkerCard', () => {
 
 describe('MarkerCard folder picker', () => {
   const groups = [
-    { color: null, hidden: false, id: 'g1', name: 'Line 1' },
-    { color: null, hidden: false, id: 'g2', name: 'Line 2' },
+    { collapsed: false, color: null, hidden: false, id: 'g1', name: 'Line 1' },
+    { collapsed: false, color: null, hidden: false, id: 'g2', name: 'Line 2' },
   ]
 
   function renderWithFolders(markerOverrides: Partial<Marker> = {}) {

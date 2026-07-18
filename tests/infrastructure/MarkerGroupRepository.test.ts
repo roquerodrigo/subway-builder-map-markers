@@ -30,7 +30,7 @@ function createMemoryStorage(): MemoryStorage {
 }
 
 function group(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
+  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
 }
 
 afterEach(() => {
@@ -107,13 +107,19 @@ describe('MarkerRepository folders', () => {
   it('heals a folder whose fields are missing or mistyped', async () => {
     const storage = createMemoryStorage()
     storage.entries.set('groups:save:save-a', {
-      groups: [{ color: 7, hidden: 'yes', id: 'g1', name: null }],
+      groups: [{ collapsed: 'nope', color: 7, hidden: 'yes', id: 'g1', name: null }],
       version: 1,
     })
     const repository = new MarkerRepository(storage)
     expect(await repository.loadGroupsForSave('save-a')).toEqual([
-      { color: null, hidden: false, id: 'g1', name: '' },
+      { collapsed: false, color: null, hidden: false, id: 'g1', name: '' },
     ])
+  })
+
+  it('round-trips the collapsed state of a folder', async () => {
+    const repository = new MarkerRepository(createMemoryStorage())
+    await repository.saveGroupsForSave('save-a', [group({ collapsed: true })])
+    expect((await repository.loadGroupsForSave('save-a'))[0].collapsed).toBe(true)
   })
 
   it('clears the cached folders when the city cache is cleared', async () => {

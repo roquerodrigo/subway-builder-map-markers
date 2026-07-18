@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 
 describe('createGroup', () => {
-  it('creates a visible, empty, uncolored folder from a name', () => {
+  it('creates a visible, expanded, empty, uncolored folder from a name', () => {
     const group = createGroup('Line 1 - Azul')
     expect(group.name).toBe('Line 1 - Azul')
     expect(group.hidden).toBe(false)
+    expect(group.collapsed).toBe(false)
     expect(group.color).toBeNull()
     expect(typeof group.id).toBe('string')
   })

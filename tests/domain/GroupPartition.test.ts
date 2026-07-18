@@ -6,7 +6,7 @@ import type { Marker } from '@/domain/marker/Marker'
 import { partitionByGroup } from '@/domain/group/GroupPartition'
 
 function group(id: string): MarkerGroup {
-  return { color: null, hidden: false, id, name: id }
+  return { collapsed: false, color: null, hidden: false, id, name: id }
 }
 
 function labelsOf(markers: Marker[]): string[] {

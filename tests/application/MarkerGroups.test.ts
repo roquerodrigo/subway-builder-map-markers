@@ -129,6 +129,37 @@ describe('MarkerStore folders', () => {
     expect(listener).not.toHaveBeenCalled()
   })
 
+  it('collapses and expands a folder', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    expect(store.groups()[0].collapsed).toBe(false)
+    store.setGroupCollapsed(group.id, true)
+    expect(store.groups()[0].collapsed).toBe(true)
+    store.toggleGroupCollapsed(group.id)
+    expect(store.groups()[0].collapsed).toBe(false)
+  })
+
+  it('ignores collapsing a folder that is already in that state, and an unknown folder', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.setGroupCollapsed(group.id, false)
+    store.toggleGroupCollapsed('no-such-folder')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('persists the collapsed state to the save bucket', async () => {
+    const { repository, state, store } = createFixture()
+    playing(state, '/saves/a.metro', 'sao-paulo')
+    await store.sync()
+    const group = store.addGroup('Line 1')
+    store.setGroupCollapsed(group.id, true)
+    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+    const saved = await repository.loadGroupsForSave('/saves/a.metro')
+    expect(saved[0].collapsed).toBe(true)
+  })
+
   describe('visibleMarkers', () => {
     it('returns every marker when no folder is hidden', () => {
       const { store } = createFixture()
@@ -185,7 +216,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', groupId: 'g1', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ])
       await repository.saveGroupsForSave('/saves/a.metro', [
-        { color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' },
+        { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' },
       ])
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
@@ -199,7 +230,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ])
       await repository.saveGroupsRecent('sao-paulo', [
-        { color: null, hidden: false, id: 'g1', name: 'Cached' },
+        { collapsed: false, color: null, hidden: false, id: 'g1', name: 'Cached' },
       ])
       playing(state, '/saves/_auto_new.metro', 'sao-paulo')
       await store.sync()
@@ -208,7 +239,7 @@ describe('MarkerStore folders', () => {
 
     it('clears the cached folders when a brand-new game starts', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveGroupsRecent('sao-paulo', [{ color: null, hidden: false, id: 'g1', name: 'Old' }])
+      await repository.saveGroupsRecent('sao-paulo', [{ collapsed: false, color: null, hidden: false, id: 'g1', name: 'Old' }])
       playing(state, '/saves/new.metro', 'sao-paulo')
       store.startNewGame()
       await store.sync()
