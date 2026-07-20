@@ -1,15 +1,11 @@
 # CLAUDE.md
 
-Guidance for working in this repo.
-
 ## What this is
 
 A **TypeScript** mod for [Subway Builder](https://www.subwaybuilder.com) that adds
 **draggable map markers** for sketching future stations: each marker has a color,
-an icon, an editable label and an optional **1 km influence radius**. Authored as a
-small **DDD** codebase under `src/` and **bundled by esbuild into one IIFE**
-(`dist/index.js`) — the single file the game loads. React comes from the host at
-runtime (never bundled). Conventions mirror the sibling mod
+an icon, an editable label and an optional **1 km influence radius**. React comes from
+the host at runtime (never bundled). Conventions mirror the sibling mod
 `subway-builder-auto-lines`.
 
 Markers can be organized into **folders** (one per line, say), each foldable and
@@ -27,21 +23,20 @@ missing handle just degrades gracefully.
 
 ## Layout
 
-- `src/` — the mod, in TypeScript. **`main.tsx` is the entry** (composition root).
-  Layers: `domain/` (pure marker logic + geometry), `application/` (the shared
-  `MarkerStore`), `infrastructure/` (the only code that touches the map/window/
-  localStorage/React), `presentation/` (the `.tsx` panel), `shared/game/` (typed
-  game/map contracts).
-- `src/manifest.json` — mod metadata; `main` is `index.js` (the built bundle).
-- `dist/index.js` — esbuild output (gitignored); the file `install-mod` copies.
-- `scripts/` — `build.mjs` (esbuild → one IIFE, host React external),
-  `install-mod.mjs`, `package-release.mjs` (the Railyard release assets), `debug.mjs`,
-  `cdp-eval.mjs` (dev workflow, Node, macOS).
-- `tsconfig.json` (`tsc --noEmit`; esbuild does the emit), `eslint.config.mjs`
-  (flat-config ESLint 9, adapted from `roquerodrigo/nextjs-boilerplate`).
-- `docs/game-internals.md` — **the game surfaces this mod depends on** (mostly the
-  GL map instance). Read this first. `docs/inspecting-the-game.md` — how to
-  inspect/drive the live game over CDP.
+DDD under `src/`, bundled by esbuild into one IIFE (`dist/index.js`, gitignored — the
+single file the game loads; `install-mod` copies it). **`main.tsx` is the entry**
+(composition root): guards `SubwayBuilderAPI`, wires deps, registers the panel, starts
+the controller, installs `SaveScopeRegistrar` and `StationNamer`. Layers: `domain/`
+(pure marker logic + geometry, no map/DOM/window), `application/` (`MarkerStore`,
+`SettingsStore`), `infrastructure/` (the only code that touches the
+map/window/localStorage/React), `presentation/` (the `.tsx` panel), `shared/game/`
+(typed game/map contracts).
+
+`MarkerStore` is the **single source of truth**: both the React panel and the
+imperative map badges subscribe to it, so a drag on the map and an edit in the panel
+can't diverge. `docs/game-internals.md` documents the game surfaces this mod depends on
+(mostly the GL map instance) — **read it first**; `docs/inspecting-the-game.md` covers
+driving the live game over CDP.
 
 **TypeScript version**: pinned to **5.9** (not 7) so typescript-eslint's type-aware
 rules can run.
@@ -51,68 +46,6 @@ never `../../`. It's declared once in `tsconfig.json` (`paths`), which esbuild r
 its own; vite doesn't, so `vitest.config.ts` mirrors it in `resolve.alias`. Tests reach
 into the mod the same way, and only keep a relative path for a helper sitting next to
 them. The alias is a compile-time concept: it's gone from `dist/index.js`.
-
-## Code map (`src/`)
-
-**`domain/marker/`** — pure, no map/DOM/window.
-- `Marker.ts` — the `Marker` entity + `OPTIMAL_SPACING_FACTOR` (√3, the ideal
-  center-to-center spacing as a multiple of the radius).
-- `MarkerPalette.ts` — the color swatches. `MarkerIconSet.ts` — the icon set as
-  **primitive SVG element descriptors** (not raw path strings), so both renderers
-  can build them safely. `MarkerFactory.ts` — `createMarker` (id + defaults).
-- `GeodesicCircle.ts` — `geodesicCircle(center, meters)`: a true geographic circle
-  polygon (destination-point formula) so the radius scales with zoom.
-- `StationNaming.ts` — pure `stationNameFromMarkers(position, markers, radiusMeters)`:
-  the nearest named marker whose influence area (haversine) covers a point, for the
-  opt-in station-naming feature.
-
-**`domain/group/`** — the folders. `MarkerGroup.ts` (a folder: id, name, optional
-color, `hidden`, `collapsed`), `MarkerGroupFactory.ts` (`createGroup`),
-`GroupPartition.ts` (`partitionByGroup` splits markers into their folders; a dangling
-`groupId` falls back to ungrouped, so a marker is never lost).
-
-**`application/`** — `MarkerStore.ts`: the **single source of truth**. Holds the
-markers, folders and selection, notifies subscribers on every change, and (debounced)
-persists to the current save's buckets. **Both** the React panel and the imperative map
-badges subscribe here, so a drag on the map and an edit in the panel can't diverge.
-`visibleMarkers()` drops the markers of hidden folders (what the map draws); `sync()`
-(re)loads markers + folders for whatever save is active; `startNewGame()` resets for a
-brand-new game. `SettingsStore.ts` holds the global display settings (incl. the
-`nameStationsFromMarkers` opt-in). See **Marker scoping** below.
-
-**`infrastructure/`** — the only code that touches the map/window/storage/React.
-- `map/MarkerLayer.ts` — the **draggable DOM badges** on `getCanvasContainer()`,
-  re-projected on every map `'move'`; owns its own pointer-drag (disables the map's
-  `dragPan` while dragging; a press that doesn't move is a click = select).
-- `map/InfluenceRadiusLayer.ts` — the 1 km circles as a GeoJSON `fill`+`line`
-  source, data-driven color, retry-until-style-ready (mirrors auto-lines' overlay).
-- `map/MapMarkersController.ts` — wires the store to both layers, owns placement
-  (`once('click')`) and focus (`easeTo`); `syncToMap()` only re-renders (the markers
-  themselves are loaded by the store's own lifecycle wiring).
-- `map/iconMarkup.ts` — serializes an icon to an SVG string for the imperative badge
-  (the panel renders the same descriptors via `IconGlyph`).
-- `persistence/ModStorage.ts` — a small async KV over **localStorage** (`api.storage`
-  is a no-op in this build — see `docs/game-internals.md`).
-- `persistence/MarkerRepository.ts` — the marker buckets over `ModStorage`, defensive
-  reads that heal a malformed payload rather than throwing. Folders live in **separate
-  keys** (`groups:save:` / `groups:recent:`), so an existing marker bucket loads
-  unchanged (no schema migration).
-- `game/StationNamer.ts` — the opt-in station naming: **wraps the store's
-  `setStations`** and renames a station the player places inside a marker's area (see
-  **Station naming** below). The only code that writes to the game's own state.
-- `save/SaveScopeRegistrar.ts` — wires the save/load hooks to the store.
-- `store/GameSession.ts` — optional `saveId()` / `cityCode()` reads. `ui/react.ts`
-  (host-React shim), `ui/FloatingPanelRegistrar.ts` (`addFloatingPanel` + lifecycle
-  re-register, which also calls `controller.syncToMap()`).
-
-**`presentation/`** — the React panel (function components; hooks required).
-`MarkersPanel.tsx` (a factory `createMarkersPanel(deps)`; groups markers by folder),
-`components/` (`MarkerCard` with a folder picker, `GroupSection` = a folder's header +
-cards, `ColorSwatches`, `IconPicker`, `IconGlyph`, `Toggle`), `view/SettingsTab.tsx`,
-`hooks/useMarkers.ts` (subscribes to the store: markers + folders + placement state).
-
-**`main.tsx`** — composition root: guards `SubwayBuilderAPI`, wires deps, registers
-the panel, starts the controller, installs `SaveScopeRegistrar` and `StationNamer`.
 
 ## Marker scoping — markers belong to a save, not a city
 
@@ -158,20 +91,13 @@ timer. See `docs/game-internals.md`.
 
 ## Workflow — verify live when you can
 
-```bash
-npm run build        # esbuild → dist/index.js
-npm run typecheck    # tsc --noEmit (strict; covers tests/ too)
-npm run lint         # eslint . (npm run lint:fix to auto-fix)
-npm test             # vitest run
-npm run test:coverage # vitest + v8 coverage (fails under 90%)
-npm run install-mod  # build + copy into the game (enable in Settings > Mods)
-npm run package      # build + the two release assets in dist/release/
-npm run debug        # launch the game + CDP :9222
-node scripts/cdp-eval.mjs --file dist/index.js   # re-inject the bundle live
-```
+Scripts are in `package.json`. Non-obvious ones: `install-mod` builds + copies into
+the game (then enable in Settings > Mods); `package` builds + writes the two release
+assets to `dist/release/`; `debug` launches the game with CDP on :9222;
+`node scripts/cdp-eval.mjs --file dist/index.js` re-injects the bundle live.
 
 Run `npm run typecheck` and `npm run lint` before trusting a build — esbuild strips
-types without checking them.
+types without checking them (`tsc --noEmit`; esbuild does the emit).
 
 **Tests** live in `tests/`, mirroring `src/`, and run on **vitest + jsdom** with a 90%
 coverage floor enforced in `vitest.config.ts` (CI fails under it). Two things make the
@@ -213,11 +139,8 @@ game. To re-inject over CDP, the IIFE re-runs
 - **Use `addFloatingPanel`, not `addToolbarPanel`** — the latter's full-screen modal
   backdrop eats the map's wheel/drag events, and this mod needs the map interactive
   with the panel open.
-- **Don't cache the map instance** (see above).
 - **No `window.confirm`/`alert`** — a native dialog blocks the renderer and can't be
   dismissed over CDP. The "remove all" uses an inline two-click confirm instead.
-- **`updateStationName` doesn't set a custom name** — it re-derives from nearby streets.
-  Set a name by committing the stations array via `setStations` (see **Station naming**).
 - **`reloadMods` stacks the mod** (a fresh bootstrap per call, orphaning the old
   stores/wrappers) and an orphan can persist **stale state** on the next autosave (this
   bit us: hidden-folder flags and a shrunken marker count got written to a save). For
@@ -279,7 +202,6 @@ the registry's checks. Submission itself is an issue form
 
 ## Paths & env overrides
 
-- Game data dir: `SB_DATA_DIR` || `~/Library/Application Support/metro-maker4`
-  (mod lands in `<dir>/mods/map-markers/`).
-- App bundle: `SB_APP` || `/Applications/Subway Builder.app`.
-- CDP port: `SB_DEBUG_PORT` || `9222`.
+The dev scripts read `SB_DATA_DIR` (game data dir; the mod lands in
+`<dir>/mods/map-markers/`), `SB_APP` (app bundle) and `SB_DEBUG_PORT` (CDP port,
+default 9222), each falling back to the platform default in `scripts/`.
