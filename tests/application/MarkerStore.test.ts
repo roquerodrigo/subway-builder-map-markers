@@ -415,29 +415,56 @@ describe('MarkerStore', () => {
       expect(listener).toHaveBeenCalledTimes(1)
     })
 
-    it('clears the city cache, so it cannot inherit the previous game markers', async () => {
+    // The cache stays on disk: it is the only thread holding the previous game's board
+    // between sessions, and that game is still one load away.
+    it('does not inherit the previous game markers, and leaves the city cache intact', async () => {
       const { repository, state, store } = createFixture()
       await repository.saveRecent('sao-paulo', [storedMarker('previous game')])
-      playing(state, '/saves/new.metro', 'sao-paulo')
+      playing(state, null, 'sao-paulo')
       store.startNewGame()
       await store.sync()
       expect(store.all()).toEqual([])
-      expect(await repository.loadRecent('sao-paulo')).toEqual([])
+      expect(labelsOf(await repository.loadRecent('sao-paulo'))).toEqual(['previous game'])
     })
 
-    it('ignores the markers the save file it opens may already hold', async () => {
+    // onGameInit also arrives when the mod re-bootstraps mid-game (a mod reload).
+    // Treating that as a new game wiped the board and deleted the city cache, which
+    // is how a 337-marker board was lost: its markers were left in save buckets the
+    // game no longer reopens.
+    it('is ignored while a save is loaded, so a mod reload cannot wipe the board', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/new.metro', [storedMarker('previous game')])
-      playing(state, '/saves/new.metro', 'sao-paulo')
+      await repository.saveRecent('sao-paulo', [storedMarker('the board')])
+      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')])
+      playing(state, '/saves/current.metro', 'sao-paulo')
+      await store.sync()
+
       store.startNewGame()
       await store.sync()
-      expect(store.all()).toEqual([])
+
+      expect(labelsOf(store.all())).toEqual(['the board'])
+      expect(await repository.loadRecent('sao-paulo')).toHaveLength(1)
+      expect(await repository.loadForSave('/saves/current.metro')).toHaveLength(1)
     })
 
-    // onGameInit can fire before the city is known. The reset has to stay pending
-    // until a city shows up: consuming it on the first sync would let the next one
-    // inherit the previous game's markers from the cache it never got to clear.
-    it('holds the reset pending until the city is known, then clears the city cache', async () => {
+    // The board a mod reload must not lose includes what is still inside the persist
+    // debounce: an emptied store would commit [] straight over the save's bucket.
+    it('does not let a later edit persist an emptied board over the save bucket', async () => {
+      const { repository, state, store } = createFixture()
+      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')])
+      playing(state, '/saves/current.metro', 'sao-paulo')
+      await store.sync()
+
+      store.startNewGame()
+      await store.sync()
+      store.add([-46.6, -23.5])
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+
+      expect(await repository.loadForSave('/saves/current.metro')).toHaveLength(2)
+    })
+
+    // onGameInit can fire before the city is known, so the sync that first sees a city
+    // must still keep the new game off the cache.
+    it('keeps ignoring the city cache when the city only shows up on a later sync', async () => {
       const { repository, state, store } = createFixture()
       await repository.saveRecent('sao-paulo', [storedMarker('previous game')])
       playing(state, null, null)
@@ -449,19 +476,24 @@ describe('MarkerStore', () => {
       playing(state, null, 'sao-paulo')
       await store.sync()
       expect(store.all()).toEqual([])
-      expect(await repository.loadRecent('sao-paulo')).toEqual([])
+      expect(labelsOf(await repository.loadRecent('sao-paulo'))).toEqual(['previous game'])
     })
 
-    it('stops being a new game once the city is known', async () => {
+    // Opening the game to the main menu is indistinguishable from starting a new game
+    // (onGameInit, no save loaded) — the state the game comes back in after a crash.
+    // Loading a save is what settles it, and the cache has to be readable again.
+    it('reads the city cache again once a save is loaded', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveRecent('rio', [storedMarker('from rio')])
-      playing(state, null, 'sao-paulo')
+      await repository.saveRecent('sao-paulo', [storedMarker('the board')])
+      playing(state, null, null)
       store.startNewGame()
       await store.sync()
 
-      playing(state, null, 'rio')
+      playing(state, '/saves/_auto_1.metro', 'sao-paulo')
+      store.resumeSavedGame()
       await store.sync()
-      expect(labelsOf(store.all())).toEqual(['from rio'])
+
+      expect(labelsOf(store.all())).toEqual(['the board'])
     })
 
     it('keeps the markers placed before the first autosave made the game identifiable', async () => {

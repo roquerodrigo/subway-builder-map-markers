@@ -35,11 +35,6 @@ interface StoredPayload {
 export class MarkerRepository {
   constructor(private readonly storage: ModStorage) {}
 
-  async clearRecent(cityCode: string): Promise<void> {
-    await this.storage.delete(RECENT_PREFIX + cityCode)
-    await this.storage.delete(GROUPS_RECENT_PREFIX + cityCode)
-  }
-
   async loadForSave(saveId: string): Promise<Marker[]> {
     return this.read(SAVE_PREFIX + saveId)
   }

@@ -122,12 +122,11 @@ describe('MarkerRepository folders', () => {
     expect((await repository.loadGroupsForSave('save-a'))[0].collapsed).toBe(true)
   })
 
-  it('clears the cached folders when the city cache is cleared', async () => {
+  it('keeps a save bucket and the city cache apart', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveGroupsForSave('save-a', [group()])
-    await repository.saveGroupsRecent('sao-paulo', [group()])
-    await repository.clearRecent('sao-paulo')
-    expect(await repository.loadGroupsRecent('sao-paulo')).toEqual([])
-    expect(await repository.loadGroupsForSave('save-a')).toEqual([group()])
+    await repository.saveGroupsForSave('save-a', [group({ name: 'own' })])
+    await repository.saveGroupsRecent('sao-paulo', [group({ name: 'cached' })])
+    expect((await repository.loadGroupsForSave('save-a'))[0].name).toBe('own')
+    expect((await repository.loadGroupsRecent('sao-paulo'))[0].name).toBe('cached')
   })
 })

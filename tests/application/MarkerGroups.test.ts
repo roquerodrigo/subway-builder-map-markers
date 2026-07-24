@@ -237,13 +237,14 @@ describe('MarkerStore folders', () => {
       expect(store.groups().map((group) => group.name)).toEqual(['Cached'])
     })
 
-    it('clears the cached folders when a brand-new game starts', async () => {
+    it('does not inherit the cached folders when a brand-new game starts, and keeps them on disk', async () => {
       const { repository, state, store } = createFixture()
       await repository.saveGroupsRecent('sao-paulo', [{ collapsed: false, color: null, hidden: false, id: 'g1', name: 'Old' }])
-      playing(state, '/saves/new.metro', 'sao-paulo')
+      playing(state, null, 'sao-paulo')
       store.startNewGame()
       await store.sync()
-      expect(await repository.loadGroupsRecent('sao-paulo')).toEqual([])
+      expect(store.groups()).toEqual([])
+      expect((await repository.loadGroupsRecent('sao-paulo')).map((group) => group.name)).toEqual(['Old'])
     })
   })
 })

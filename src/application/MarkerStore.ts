@@ -27,17 +27,20 @@ const PERSIST_DEBOUNCE_MS = 250
 // mirrored to a per-city "recent" cache. The game reopens the newest autosave (a
 // different file each time), so a save's own bucket is often empty on load and inherits
 // from the city cache — that's how the same game keeps its board across sessions. A
-// brand-new game (onGameInit → startNewGame) starts empty and clears that cache, so it
-// can't inherit the previous game's board.
+// brand-new game (onGameInit → startNewGame) starts empty and stops reading that cache
+// until a save is loaded, so it can't inherit the previous game's board. Nothing is
+// ever deleted to achieve that: the cache is the only thread holding a board between
+// sessions, so dropping it strands the markers in save buckets the game will not
+// reopen (it keeps 2 autosaves per city). That cost the user their board twice.
 //
 // Folders let the player organize markers (e.g. one folder per line) and hide a whole
 // folder at once: a hidden folder's markers stay in the panel but drop off the map (see
 // visibleMarkers, which the controller draws).
 export class MarkerStore {
-  private cacheClearPending = false
   private city: null | string = null
   private freshGame = false
   private groupList: MarkerGroup[] = []
+  private inheritsCityCache = true
   private listeners = new Set<Listener>()
   private loadToken = 0
   private markers: Marker[] = []
@@ -134,6 +137,16 @@ export class MarkerStore {
     }
   }
 
+  // A save was loaded (onGameLoaded), so whatever new game was pending isn't one: this
+  // is an existing board and it may read the city cache again. Without this, opening
+  // the game to the main menu — which fires onGameInit with no save loaded, the state
+  // the game comes back in after a crash — would leave every save loaded afterwards
+  // cut off from the cache.
+  resumeSavedGame(): void {
+    this.freshGame = false
+    this.inheritsCityCache = true
+  }
+
   select(id: null | string): void {
     if (this.selectedId === id) {
       return
@@ -176,11 +189,18 @@ export class MarkerStore {
     }
   }
 
-  // Reset for a brand-new game (onGameInit): start empty, and have the next sync
-  // clear the city's continuity cache so this game can't inherit the previous one's
-  // board.
+  // Reset for a brand-new game (onGameInit): start empty, and stop reading the city's
+  // continuity cache so this game can't inherit the previous one's board. The cache is
+  // left on disk untouched — the game that owns it is still one load away.
+  //
+  // Ignored while a save is loaded: onGameInit also reaches us when the mod
+  // re-bootstraps mid-game (a mod reload), and emptying the board there is destructive,
+  // because the next edit persists that empty board over the save's own bucket.
   startNewGame(): void {
-    this.cacheClearPending = true
+    if (this.session.saveId() !== null) {
+      return
+    }
+    this.inheritsCityCache = false
     this.freshGame = true
     this.groupList = []
     this.markers = []
@@ -208,15 +228,6 @@ export class MarkerStore {
     // load below would replace it with what they hold — the next edit would then
     // persist that stale state over the good bucket, losing it for good.
     await this.flushPersist()
-
-    // A brand-new game must not inherit the city's cached board, but onGameInit can
-    // fire before the city is known — so the clear waits for a city rather than being
-    // skipped. It runs before the load below, which is what stops the new game from
-    // reading the cache it is about to drop.
-    if (this.cacheClearPending && city) {
-      this.cacheClearPending = false
-      await this.repository.clearRecent(city)
-    }
 
     if (this.freshGame) {
       // startNewGame already emptied the store; adopt the ids and skip the load so a
@@ -339,7 +350,7 @@ export class MarkerStore {
         return { groups: await this.repository.loadGroupsForSave(saveId), markers: own }
       }
     }
-    if (city) {
+    if (city && this.inheritsCityCache) {
       return {
         groups: await this.repository.loadGroupsRecent(city),
         markers: await this.repository.loadRecent(city),
