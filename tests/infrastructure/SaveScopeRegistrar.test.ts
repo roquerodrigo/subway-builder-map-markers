@@ -24,6 +24,7 @@ function createStoreSpies() {
   const store = new MarkerStore(new MarkerRepository(createModStorage()), new GameSession({}, null))
 
   return {
+    resumeSavedGame: vi.spyOn(store, 'resumeSavedGame').mockImplementation(() => {}),
     startNewGame: vi.spyOn(store, 'startNewGame').mockImplementation(() => {}),
     store,
     sync: vi.spyOn(store, 'sync').mockResolvedValue(undefined),
@@ -91,6 +92,29 @@ describe('SaveScopeRegistrar', () => {
       expect(onSynced).toHaveBeenCalledTimes(1)
     })
   })
+
+  // Opening the game to the main menu fires onGameInit with no save loaded, so loading
+  // a save is what tells the store this board is an existing one after all.
+  it('settles the pending new game when a save is loaded', async () => {
+    const { hooks, registered } = recordHooks()
+    new SaveScopeRegistrar({ hooks }, fixture.store, onSynced).install()
+    registered.get('onGameInit')?.()
+    registered.get('onGameLoaded')?.()
+    expect(fixture.resumeSavedGame).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => {
+      expect(fixture.sync).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  it.each(SYNC_HOOKS.filter((name) => name !== 'onGameLoaded'))(
+    'does not settle a pending new game when %s fires',
+    (name) => {
+      const { hooks, registered } = recordHooks()
+      new SaveScopeRegistrar({ hooks }, fixture.store, onSynced).install()
+      registered.get(name)?.()
+      expect(fixture.resumeSavedGame).not.toHaveBeenCalled()
+    },
+  )
 
   it.each(SYNC_HOOKS)('reloads the markers of the active save when %s fires', async (name) => {
     const { hooks, registered } = recordHooks()

@@ -165,11 +165,21 @@ cache (`recent:<cityCode>`) that gives a game continuity across sessions — nee
 because the newest autosave is a different file every time, so a save's own bucket is
 usually empty on load. Load order: **own bucket → city cache → empty**.
 
-A brand-new game (`onGameInit`) starts empty **and clears the city cache**, so it
-can't inherit the previous game's markers through it. Since `onGameInit` can fire
-before the city is known, the "fresh game" state is held until a city code shows up
-rather than consumed on the first sync — otherwise the reset is silently lost and the
-next sync inherits the old markers.
+A brand-new game (`onGameInit`) starts empty and **stops reading the city cache**, so
+it can't inherit the previous game's markers through it. The cache itself is left on
+disk: the game that owns it is still one load away.
+
+**`onGameInit` does not mean "new game".** Opening the game to the main menu fires it
+with no save loaded, which is exactly what a new game looks like — and it's the state
+the game comes back in after a crash. That ambiguity is why the cache is only ignored,
+never deleted; `onGameLoaded` then settles it, because a loaded save is by definition
+an existing board, and reads resume.
+
+Two related facts make deleting it unrecoverable, not merely inconvenient: the game
+keeps **only 2 autosaves per city**, so the `save:<path>` buckets of older autosaves
+point at files it will never reopen; and the cache is therefore the only thread holding
+a board across sessions. A `save:<path>` bucket, by contrast, is never touched by this
+logic — which is what makes it a safe place to restore a board into.
 
 The trade-off this accepts: loading an **old** save that predates the mod (no bucket
 of its own) inherits whatever that city last had, rather than opening empty.

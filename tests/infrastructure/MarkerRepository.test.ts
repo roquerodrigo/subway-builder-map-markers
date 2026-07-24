@@ -83,13 +83,12 @@ describe('MarkerRepository', () => {
     expect(await repository.loadRecent('unknown')).toEqual([])
   })
 
-  it('clears the city cache without touching the save bucket', async () => {
+  it('keeps a save bucket and the city cache apart', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveForSave('save-a', [marker()])
-    await repository.saveRecent('sao-paulo', [marker()])
-    await repository.clearRecent('sao-paulo')
-    expect(await repository.loadRecent('sao-paulo')).toEqual([])
-    expect(await repository.loadForSave('save-a')).toEqual([marker()])
+    await repository.saveForSave('save-a', [marker({ label: 'own' })])
+    await repository.saveRecent('sao-paulo', [marker({ label: 'cached' })])
+    expect((await repository.loadForSave('save-a'))[0].label).toBe('own')
+    expect((await repository.loadRecent('sao-paulo'))[0].label).toBe('cached')
   })
 
   it('does not warn about a bucket that is simply empty', async () => {

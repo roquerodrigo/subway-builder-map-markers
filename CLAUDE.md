@@ -119,10 +119,18 @@ the panel, starts the controller, installs `SaveScopeRegistrar` and `StationName
 Markers are keyed by the loaded save (`save:<currentSaveInfo.id>`), with a per-city
 cache (`recent:<cityCode>`) for continuity: the game reopens the **newest autosave** —
 a different file every session — so a save's own bucket is usually empty on load and
-inherits from the cache. Load order: **own bucket → city cache → empty**. A brand-new game starts empty and **clears the city cache** so it can't
-inherit the previous game's markers. `docs/game-internals.md` §4–6 has the why, the
-hook behaviors and the accepted trade-off. Folders persist next to the markers, in
-their own `groups:*` keys, loaded from the same bucket.
+inherits from the cache. Load order: **own bucket → city cache → empty**. A brand-new
+game starts empty and **stops reading the city cache** — it never deletes it — so it
+can't inherit the previous game's markers; loading a save (`onGameLoaded`) makes the
+cache readable again. `docs/game-internals.md` §4–6 has the why, the hook behaviors and
+the accepted trade-off. Folders persist next to the markers, in their own `groups:*`
+keys, loaded from the same bucket.
+
+> **The mod deletes no marker data, ever.** Opening the game to the main menu fires
+> `onGameInit` with no save loaded — the state it comes back in after a crash — and is
+> indistinguishable from starting a new game. Deleting the cache there cost the user
+> their whole board twice, because it's the only thread holding a board between
+> sessions and the game keeps just 2 autosaves per city.
 
 ## Station naming — the one place the mod edits the game
 
