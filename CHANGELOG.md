@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.1.0...v1.1.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* never delete a city's marker cache ([faea23e](https://github.com/roquerodrigo/subway-builder-map-markers/commit/faea23e30372c86ed610a35d1a101ae941ec1c17))
+
 ## [1.1.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.0.1...v1.1.0) (2026-07-18)
 
 
