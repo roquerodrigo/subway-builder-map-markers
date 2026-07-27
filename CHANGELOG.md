@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.1.1...v1.2.0) (2026-07-27)
+
+
+### Features
+
+* centre the map from anywhere on a marker card ([4d1ef27](https://github.com/roquerodrigo/subway-builder-map-markers/commit/4d1ef27f69c7eae4d7f150517b2ac1c012a46ec0))
+* keep the board in the game's per-mod file instead of localStorage ([8ed8c13](https://github.com/roquerodrigo/subway-builder-map-markers/commit/8ed8c13c335d4e60d0a329750b7b04d700940939))
+* let the overlay fade all the way out while the panel is closed ([56a7f5d](https://github.com/roquerodrigo/subway-builder-map-markers/commit/56a7f5df3a272f2aff1bfd174e5357c71713bd77))
+* reorder markers and folders by dragging them ([ffb8247](https://github.com/roquerodrigo/subway-builder-map-markers/commit/ffb8247c6864a8281c2bcb5e161b455abe189d7b))
+
+
+### Bug Fixes
+
+* recover a stranded board instead of drawing an empty map ([9b89243](https://github.com/roquerodrigo/subway-builder-map-markers/commit/9b8924321965b24e8ed9f2769e9075a927a5b525))
+
 ## [1.1.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.1.0...v1.1.1) (2026-07-25)
 
 
