@@ -1,11 +1,32 @@
+import type { DragEvent } from 'react'
+
 import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
+import type { DropSide } from '@/domain/ordering/ItemOrder'
+import type { MarkerCardDrag } from '@/presentation/components/MarkerCard'
 
 import { h } from '@/infrastructure/ui/react'
+import { DragHandle } from '@/presentation/components/DragHandle'
 import { MarkerCard } from '@/presentation/components/MarkerCard'
+import { dropIndicatorShadow } from '@/presentation/theme'
+
+// A folder takes part in two drags at once: it can be reordered against the other
+// folders, and it is where a marker dropped anywhere but on a card lands.
+export interface GroupSectionDrag {
+  cardDrag: (markerId: string) => MarkerCardDrag
+  dragging: boolean
+  hint: DropSide | null
+  markerHovering: boolean
+  onDragEnd: () => void
+  onDragOver: (event: DragEvent<HTMLElement>) => void
+  onDragStart: (event: DragEvent<HTMLElement>) => void
+  onDrop: (event: DragEvent<HTMLElement>) => void
+  onLeave: () => void
+}
 
 export interface GroupSectionProps {
   collapsed: boolean
+  drag?: GroupSectionDrag
   group: MarkerGroup
   groups: MarkerGroup[]
   markers: Marker[]
@@ -26,12 +47,21 @@ export interface GroupSectionProps {
 // drops its markers off the map but keeps them here so they can be edited or shown
 // again; removing a folder keeps its markers (they fall back to "no folder").
 export function GroupSection(props: GroupSectionProps): JSX.Element {
-  const { collapsed, group, groups, markers, onAssign, onDelete, onFocus, onRemove, onRename, onSelect, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
+  const { collapsed, drag, group, groups, markers, onAssign, onDelete, onFocus, onRemove, onRename, onSelect, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
   const swatch = group.color ?? '#64748b'
 
   return (
-    <div className="rounded-lg border border-border">
+    <div
+      className="rounded-lg border border-border"
+      onDragLeave={drag?.onLeave}
+      onDragOver={drag?.onDragOver}
+      onDrop={drag?.onDrop}
+      style={sectionStyle(swatch, drag)}
+    >
       <div className={'flex items-center gap-2 px-2 py-1.5 ' + (group.hidden ? 'opacity-60' : '')}>
+        {drag ?
+            <DragHandle label="Reorder folder" onDragEnd={drag.onDragEnd} onDragStart={drag.onDragStart} /> :
+          null}
         <button
           aria-expanded={!collapsed}
           aria-label={collapsed ? 'Expand folder' : 'Collapse folder'}
@@ -92,9 +122,10 @@ export function GroupSection(props: GroupSectionProps): JSX.Element {
           (
             <div className="space-y-2 px-2 pb-2">
               {markers.length === 0 ?
-                  <p className="px-1 py-1 text-xs text-muted-foreground">Empty — move markers here with their “Folder” picker.</p> :
+                  <p className="px-1 py-1 text-xs text-muted-foreground">Empty — drag markers in, or use their “Folder” picker.</p> :
                   markers.map((marker) => (
                     <MarkerCard
+                      drag={drag?.cardDrag(marker.id)}
                       groups={groups}
                       key={marker.id}
                       marker={marker}
@@ -128,4 +159,25 @@ function eyeOffIcon(): JSX.Element {
       <line x1="1" x2="23" y1="1" y2="23" />
     </svg>
   )
+}
+
+// A folder being reordered fades; a folder about to take a marker lights up in its own
+// colour, which is the same signal a card gives, only around the whole section.
+function sectionStyle(swatch: string, drag: GroupSectionDrag | undefined): Record<string, string> | undefined {
+  if (!drag) {
+    return undefined
+  }
+  const style: Record<string, string> = {}
+  if (drag.hint) {
+    style.boxShadow = dropIndicatorShadow(drag.hint)
+  }
+  if (drag.markerHovering) {
+    style.borderColor = swatch
+    style.background = `${swatch}14`
+  }
+  if (drag.dragging) {
+    style.opacity = '0.4'
+  }
+
+  return Object.keys(style).length > 0 ? style : undefined
 }

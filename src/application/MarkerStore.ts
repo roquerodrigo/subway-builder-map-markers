@@ -1,11 +1,13 @@
 import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
+import type { DropSide } from '@/domain/ordering/ItemOrder'
 import type { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
 import type { GameSession } from '@/infrastructure/store/GameSession'
 import type { Coordinate } from '@/shared/game/Coordinate'
 
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 import { createMarker } from '@/domain/marker/MarkerFactory'
+import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
 
 type Listener = () => void
 
@@ -102,6 +104,57 @@ export class MarkerStore {
 
   groups(): MarkerGroup[] {
     return this.groupList
+  }
+
+  // Reorder a folder against another one. Folder order is the order of this list, which
+  // is also the order the panel draws them in.
+  moveGroup(movedId: string, targetId: string, side: DropSide): void {
+    const next = side === 'before' ?
+        moveBefore(this.groupList, movedId, targetId) :
+        moveAfter(this.groupList, movedId, targetId)
+    if (next === this.groupList) {
+      return
+    }
+    this.groupList = next
+    this.commit()
+  }
+
+  // Drop a marker next to another one: it lands in the target's folder and takes the
+  // place asked for. Moving between folders and reordering inside one are the same
+  // gesture, so they're the same operation.
+  moveMarker(movedId: string, targetId: string, side: DropSide): void {
+    const target = this.markers.find((marker) => marker.id === targetId)
+    const moved = this.markers.find((marker) => marker.id === movedId)
+    if (!target || !moved) {
+      return
+    }
+    const reordered = side === 'before' ?
+        moveBefore(this.markers, movedId, targetId) :
+        moveAfter(this.markers, movedId, targetId)
+    const group = target.groupId ?? null
+    if (reordered === this.markers && (moved.groupId ?? null) === group) {
+      return
+    }
+    this.markers = reordered.map((marker) => (marker.id === movedId ? this.withGroup(marker, group) : marker))
+    this.commit()
+  }
+
+  // Drop a marker on a folder itself (its header, or the empty space inside it) rather
+  // than on one of its markers: it joins that folder at the end. `null` takes it out of
+  // every folder, which is the only way to reach an empty ungrouped list.
+  moveMarkerToGroup(movedId: string, groupId: null | string): void {
+    const moved = this.markers.find((marker) => marker.id === movedId)
+    if (!moved || (groupId !== null && !this.groupList.some((group) => group.id === groupId))) {
+      return
+    }
+    const siblings = this.markers.filter((marker) => marker.id !== movedId && (marker.groupId ?? null) === groupId)
+    const last = siblings[siblings.length - 1]
+    const reordered = last ? moveAfter(this.markers, movedId, last.id) : this.markers
+    if (reordered === this.markers && (moved.groupId ?? null) === groupId) {
+      return
+    }
+    this.markers = reordered.map((marker) => (marker.id === movedId ? this.withGroup(marker, groupId) : marker))
+    this.commit()
   }
 
   remove(id: string): void {
@@ -389,5 +442,9 @@ export class MarkerStore {
       clearTimeout(this.persistTimer)
     }
     this.persistTimer = setTimeout(() => void this.flushPersist(), PERSIST_DEBOUNCE_MS)
+  }
+
+  private withGroup(marker: Marker, groupId: null | string): Marker {
+    return { ...marker, groupId }
   }
 }
