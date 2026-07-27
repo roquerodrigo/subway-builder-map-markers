@@ -43,8 +43,11 @@ describe('DEFAULT_SETTINGS', () => {
     expect(DEFAULT_SETTINGS.idleOpacity).toBe(DEFAULT_IDLE_OPACITY)
   })
 
-  it('never lets the overlay fade all the way out', () => {
-    expect(MIN_IDLE_OPACITY).toBeGreaterThan(0)
+  // Hiding the overlay outright is a legitimate way to play with the board parked, and
+  // it can't be a trap: the panel restores full opacity, and a faded overlay takes no
+  // clicks either way.
+  it('lets the overlay fade all the way out', () => {
+    expect(MIN_IDLE_OPACITY).toBe(0)
     expect(MAX_IDLE_OPACITY).toBe(1)
   })
 

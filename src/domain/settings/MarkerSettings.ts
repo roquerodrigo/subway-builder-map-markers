@@ -22,10 +22,12 @@ export const MAX_RADIUS_METERS = 2000
 export const RADIUS_STEP_METERS = 50
 
 // With the panel closed the markers are a background sketch under the game's own map,
-// so they fade back by default. 1 keeps them fully opaque (the fade off); the floor
-// stays clear of 0 so they can never vanish with no way to tell why.
+// so they fade back by default. 1 keeps them fully opaque (the fade off) and 0 hides
+// them outright — safe to reach, because the panel is what brings them back and it
+// always draws them fully opaque, and because a faded overlay takes no clicks
+// (`setInteractive`), so nothing invisible can be in the way.
 export const DEFAULT_IDLE_OPACITY = 0.5
-export const MIN_IDLE_OPACITY = 0.1
+export const MIN_IDLE_OPACITY = 0
 export const MAX_IDLE_OPACITY = 1
 export const IDLE_OPACITY_STEP = 0.05
 
