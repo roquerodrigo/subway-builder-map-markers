@@ -234,9 +234,9 @@ describe('MarkersPanel marker list', () => {
     expect(store.select).toHaveBeenCalledWith('b')
   })
 
-  it('focuses the map on the marker whose card asked for it', () => {
+  it('focuses the map on the marker whose card was clicked', () => {
     const { controller } = renderPanel([createMarker('a', 'Central'), createMarker('b', 'Sé')])
-    fireEvent.click(screen.getAllByRole('button', { name: 'Center on the map' })[1])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Centre the map on this marker' })[1])
     expect(controller.focus).toHaveBeenCalledWith('b')
   })
 
