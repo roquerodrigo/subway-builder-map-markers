@@ -22,6 +22,7 @@ function createMemoryStorage(): MemoryStorage {
     entries,
     get: <T>(key: string, fallback: T): Promise<T> =>
       Promise.resolve(entries.has(key) ? (entries.get(key) as T) : fallback),
+    keys: () => Promise.resolve([...entries.keys()]),
     set: (key, value) => {
       entries.set(key, value)
 
@@ -48,7 +49,7 @@ afterEach(() => {
 describe('MarkerRepository', () => {
   it('round-trips the markers of a save', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveForSave('save-a', [marker()])
+    await repository.saveForSave('save-a', [marker()], null)
     expect(await repository.loadForSave('save-a')).toEqual([marker()])
   })
 
@@ -61,7 +62,7 @@ describe('MarkerRepository', () => {
   it('keeps the save bucket and the city cache in separate keys', async () => {
     const storage = createMemoryStorage()
     const repository = new MarkerRepository(storage)
-    await repository.saveForSave('sao-paulo', [marker({ label: 'from the save' })])
+    await repository.saveForSave('sao-paulo', [marker({ label: 'from the save' })], null)
     await repository.saveRecent('sao-paulo', [marker({ label: 'from the cache' })])
     expect([...storage.entries.keys()]).toEqual(['save:sao-paulo', 'recent:sao-paulo'])
   })
@@ -69,8 +70,8 @@ describe('MarkerRepository', () => {
   it('stores a schema version alongside the markers', async () => {
     const storage = createMemoryStorage()
     const repository = new MarkerRepository(storage)
-    await repository.saveForSave('save-a', [marker()])
-    expect(storage.entries.get('save:save-a')).toEqual({ markers: [marker()], version: 1 })
+    await repository.saveForSave('save-a', [marker()], null)
+    expect(storage.entries.get('save:save-a')).toEqual({ markers: [marker()], savedAt: expect.any(Number), version: 1 })
   })
 
   it('reads nothing for a save that was never written', async () => {
@@ -85,7 +86,7 @@ describe('MarkerRepository', () => {
 
   it('keeps a save bucket and the city cache apart', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveForSave('save-a', [marker({ label: 'own' })])
+    await repository.saveForSave('save-a', [marker({ label: 'own' })], null)
     await repository.saveRecent('sao-paulo', [marker({ label: 'cached' })])
     expect((await repository.loadForSave('save-a'))[0].label).toBe('own')
     expect((await repository.loadRecent('sao-paulo'))[0].label).toBe('cached')

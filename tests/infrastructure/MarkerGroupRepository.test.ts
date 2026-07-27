@@ -21,6 +21,7 @@ function createMemoryStorage(): MemoryStorage {
     entries,
     get: <T>(key: string, fallback: T): Promise<T> =>
       Promise.resolve(entries.has(key) ? (entries.get(key) as T) : fallback),
+    keys: () => Promise.resolve([...entries.keys()]),
     set: (key, value) => {
       entries.set(key, value)
 
@@ -40,7 +41,7 @@ afterEach(() => {
 describe('MarkerRepository folders', () => {
   it('round-trips the folders of a save', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveGroupsForSave('save-a', [group()])
+    await repository.saveGroupsForSave('save-a', [group()], null)
     expect(await repository.loadGroupsForSave('save-a')).toEqual([group()])
   })
 
@@ -53,16 +54,16 @@ describe('MarkerRepository folders', () => {
   it('keeps folders in keys separate from the markers of the same bucket', async () => {
     const storage = createMemoryStorage()
     const repository = new MarkerRepository(storage)
-    await repository.saveForSave('save-a', [])
-    await repository.saveGroupsForSave('save-a', [group()])
+    await repository.saveForSave('save-a', [], null)
+    await repository.saveGroupsForSave('save-a', [group()], null)
     expect([...storage.entries.keys()]).toEqual(['save:save-a', 'groups:save:save-a'])
   })
 
   it('stores a schema version alongside the folders', async () => {
     const storage = createMemoryStorage()
     const repository = new MarkerRepository(storage)
-    await repository.saveGroupsForSave('save-a', [group()])
-    expect(storage.entries.get('groups:save:save-a')).toEqual({ groups: [group()], version: 1 })
+    await repository.saveGroupsForSave('save-a', [group()], null)
+    expect(storage.entries.get('groups:save:save-a')).toEqual({ groups: [group()], savedAt: expect.any(Number), version: 1 })
   })
 
   it('reads no folders for a bucket that was never written', async () => {
@@ -118,13 +119,13 @@ describe('MarkerRepository folders', () => {
 
   it('round-trips the collapsed state of a folder', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveGroupsForSave('save-a', [group({ collapsed: true })])
+    await repository.saveGroupsForSave('save-a', [group({ collapsed: true })], null)
     expect((await repository.loadGroupsForSave('save-a'))[0].collapsed).toBe(true)
   })
 
   it('keeps a save bucket and the city cache apart', async () => {
     const repository = new MarkerRepository(createMemoryStorage())
-    await repository.saveGroupsForSave('save-a', [group({ name: 'own' })])
+    await repository.saveGroupsForSave('save-a', [group({ name: 'own' })], null)
     await repository.saveGroupsRecent('sao-paulo', [group({ name: 'cached' })])
     expect((await repository.loadGroupsForSave('save-a'))[0].name).toBe('own')
     expect((await repository.loadGroupsRecent('sao-paulo'))[0].name).toBe('cached')

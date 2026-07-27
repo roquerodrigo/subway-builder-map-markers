@@ -163,7 +163,8 @@ rather than throwing.
 Markers are keyed by the loaded save (`save:<currentSaveInfo.id>`), with a per-city
 cache (`recent:<cityCode>`) that gives a game continuity across sessions — needed
 because the newest autosave is a different file every time, so a save's own bucket is
-usually empty on load. Load order: **own bucket → city cache → empty**.
+usually empty on load. Load order: **own bucket → city cache → newest bucket of this
+city → empty**.
 
 A brand-new game (`onGameInit`) starts empty and **stops reading the city cache**, so
 it can't inherit the previous game's markers through it. The cache itself is left on
@@ -183,6 +184,32 @@ logic — which is what makes it a safe place to restore a board into.
 
 The trade-off this accepts: loading an **old** save that predates the mod (no bucket
 of its own) inherits whatever that city last had, rather than opening empty.
+
+### The third step: recovering a stranded board
+
+**The city cache can disappear even though the mod never deletes it.** On 2026-07-25 it
+was removed by something outside the mod: the write-ahead log of the renderer's
+`localStorage` records a `DEL` of `recent:RMSP` and `groups:recent:RMSP` in the same
+batch as the game's own `__localStorage_test__` probe, while the installed build was
+1.1.1 — which contains no call to `delete()` at all. No other installed mod touches
+`removeItem`, and a normal boot, a crash-and-reopen and a full reload, all with a
+tripwire on `Storage.prototype`, trigger nothing. The cause is still unattributed; the
+board was lost anyway, because both lookups came back empty while **19 buckets held the
+same 337 markers**.
+
+So an empty result is no longer taken at face value: `loadLatestForCity` reads every
+`save:`/`recent:` bucket and adopts the newest one belonging to the current city. Two
+fields make that decidable — `city` and `savedAt`, written into every payload. They are
+optional, and the schema version deliberately **stays at 1**: bumping it would discard
+every board already on disk. A bucket without a `city` (written before this existed) is
+a last resort, used only when nothing claims the city, since the alternative is drawing
+an empty map over a saved board.
+
+The recovery honours the same line as the cache: a brand-new game doesn't read it.
+
+Quota is **not** a constraint here — probing the renderer accepted 10M characters beyond
+the 1.65M already stored, so accumulated orphan buckets are cheap redundancy, not a
+looming failure.
 
 ---
 

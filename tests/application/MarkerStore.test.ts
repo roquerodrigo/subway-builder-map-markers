@@ -268,7 +268,7 @@ describe('MarkerStore', () => {
   describe('sync', () => {
     it('loads the markers of the loaded save', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/a.metro', [storedMarker('own')])
+      await repository.saveForSave('/saves/a.metro', [storedMarker('own')], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
       expect(labelsOf(store.all())).toEqual(['own'])
@@ -284,7 +284,7 @@ describe('MarkerStore', () => {
 
     it('prefers the markers of the loaded save over the city cache', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/a.metro', [storedMarker('own')])
+      await repository.saveForSave('/saves/a.metro', [storedMarker('own')], null)
       await repository.saveRecent('sao-paulo', [storedMarker('cached')])
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
@@ -325,7 +325,7 @@ describe('MarkerStore', () => {
 
     it('drops the selection when it reloads', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/a.metro', [storedMarker('own')])
+      await repository.saveForSave('/saves/a.metro', [storedMarker('own')], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       store.add([0, 0])
       await store.sync()
@@ -334,7 +334,7 @@ describe('MarkerStore', () => {
 
     it('notifies its subscribers once the markers are loaded', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/a.metro', [storedMarker('own')])
+      await repository.saveForSave('/saves/a.metro', [storedMarker('own')], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       const listener = vi.fn()
       store.subscribe(listener)
@@ -364,8 +364,8 @@ describe('MarkerStore', () => {
 
     it('reloads when the loaded save changes', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/a.metro', [storedMarker('from a')])
-      await repository.saveForSave('/saves/b.metro', [storedMarker('from b')])
+      await repository.saveForSave('/saves/a.metro', [storedMarker('from a')], null)
+      await repository.saveForSave('/saves/b.metro', [storedMarker('from b')], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
       playing(state, '/saves/b.metro', 'sao-paulo')
@@ -434,7 +434,7 @@ describe('MarkerStore', () => {
     it('is ignored while a save is loaded, so a mod reload cannot wipe the board', async () => {
       const { repository, state, store } = createFixture()
       await repository.saveRecent('sao-paulo', [storedMarker('the board')])
-      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')])
+      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')], null)
       playing(state, '/saves/current.metro', 'sao-paulo')
       await store.sync()
 
@@ -450,7 +450,7 @@ describe('MarkerStore', () => {
     // debounce: an emptied store would commit [] straight over the save's bucket.
     it('does not let a later edit persist an emptied board over the save bucket', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')])
+      await repository.saveForSave('/saves/current.metro', [storedMarker('the board')], null)
       playing(state, '/saves/current.metro', 'sao-paulo')
       await store.sync()
 
