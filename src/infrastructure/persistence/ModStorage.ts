@@ -1,3 +1,7 @@
+import { createGameFileStorage } from '@/infrastructure/persistence/GameFileStorage'
+import { withLegacyReads } from '@/infrastructure/persistence/LegacyBackedStorage'
+import { createLocalStorage } from '@/infrastructure/persistence/LocalStorageStorage'
+
 // One async key/value interface over persistence, so the repository doesn't care
 // where data lives.
 export interface ModStorage {
@@ -7,55 +11,13 @@ export interface ModStorage {
   set(key: string, value: unknown): Promise<void>
 }
 
-const PREFIX = 'subwaybuilder.map-markers.kv.'
-
-// Backed by localStorage. The game's official per-mod storage (api.storage) was
-// evaluated but is a no-op in this build — a set() followed by get() returns the
-// fallback and keys() stays empty — so it can't be relied on to persist. localStorage
-// does persist across sessions in the Electron renderer; it's namespaced by the
-// prefix above. Kept behind an async interface so switching back to api.storage, if
-// it starts working, is a one-file change.
+// The board is written to the game's own per-mod storage — a JSON file in the app data
+// dir, out of reach of whatever cleared the mod's localStorage keys — and read from
+// there first, falling back to localStorage for boards drawn before the move. Without
+// the IPC bridge (a build that doesn't expose it), localStorage is all there is.
 export function createModStorage(): ModStorage {
-  return {
-    delete: (key) => {
-      try {
-        window.localStorage.removeItem(PREFIX + key)
-      } catch {
-        /* storage unavailable */
-      }
+  const legacy = createLocalStorage()
+  const gameFile = createGameFileStorage()
 
-      return Promise.resolve()
-    },
-    get: <T>(key: string, fallback: T): Promise<T> => {
-      try {
-        const raw = window.localStorage.getItem(PREFIX + key)
-
-        return Promise.resolve(raw === null ? fallback : (JSON.parse(raw) as T))
-      } catch {
-        return Promise.resolve(fallback)
-      }
-    },
-    // Every key the mod owns, prefix stripped. Reading them all is how a lost board is
-    // found again when the key that should have held it is gone.
-    keys: () => {
-      try {
-        const found = Object.keys(window.localStorage)
-          .filter((key) => key.startsWith(PREFIX))
-          .map((key) => key.slice(PREFIX.length))
-
-        return Promise.resolve(found)
-      } catch {
-        return Promise.resolve([])
-      }
-    },
-    set: (key, value) => {
-      try {
-        window.localStorage.setItem(PREFIX + key, JSON.stringify(value))
-      } catch {
-        /* storage unavailable */
-      }
-
-      return Promise.resolve()
-    },
-  }
+  return gameFile ? withLegacyReads(gameFile, legacy) : legacy
 }

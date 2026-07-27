@@ -142,15 +142,40 @@ is. Two reads, both optional — a missing handle only degrades the scoping:
 
 ---
 
-## 5. Persistence — use `localStorage`, not `api.storage`
+## 5. Persistence — the game's per-mod file, reached over IPC
 
-> **`api.storage` (`get`/`set`/`delete`/`keys`, async) is a no-op in this build.**
-> A `set` followed by a `get` returns the fallback and `keys()` stays empty, even
-> after a delay. The docs say it "only persists in Electron" — it doesn't persist
-> here either. `localStorage` **does** persist across sessions in the renderer, so
-> everything goes there, namespaced under `subwaybuilder.map-markers.`. It sits
-> behind a small async KV interface (`ModStorage`), so switching to `api.storage` if
-> it ever starts working is a one-file change.
+The board lives in the game's own per-mod storage: **`<appData>/mod-data/<modId>.json`**,
+one file per mod, written by the main process. Nothing in the renderer can clear it —
+which is the point, since the mod's `localStorage` keys were deleted twice by something
+outside the mod (§6).
+
+> **`api.storage` is *not* a no-op — but this mod can't use it.** An earlier note here
+> said it was, because a `set` then `get` from the console returns the fallback. The
+> reason is in the wrapper: every method starts with `if (!currentModId) return fallback`,
+> and `currentModId` is a module-global the game sets **only while mod code is on the
+> stack** — during the mod's load, and around each hook callback it invokes (it saves,
+> sets and restores it). A call from the console has no mod id; neither does a debounced
+> write from a timer or a map event, which is where **every** write this mod makes comes
+> from. Those writes would be dropped with nothing but a `console.warn`.
+
+So `GameFileStorage` calls the same IPC channels the wrapper calls, passing the mod id
+explicitly:
+
+```js
+window.electron.invoke('mod-storage-get' | 'mod-storage-set' | 'mod-storage-delete' | 'mod-storage-keys', modId, key?, value?)
+```
+
+Each answers with an **envelope**, not the value: `{success, value}` for `get` (no
+`value` key at all when absent), `{success, keys}` for `keys`, `{success}` for the rest.
+The game's own wrapper returns that envelope verbatim, so `api.storage.get()` would hand
+back `{success: true, value: …}` rather than the value — a second reason not to use it.
+Writing a 337-marker board measured **3 ms**.
+
+`localStorage` (namespaced `subwaybuilder.map-markers.kv.`) is still read, never written:
+boards drawn before the move live there, and its keys join `keys()` so a stranded board
+is still found. It is also the whole storage if a build ever exposes no `window.electron`.
+The mod's **settings** stay in `localStorage` — they're recreatable preferences, and the
+repository is synchronous by design.
 
 Writes are debounced (a drag produces many position updates), and reads are
 defensive: a malformed or older payload yields an empty set and heals unknown icons

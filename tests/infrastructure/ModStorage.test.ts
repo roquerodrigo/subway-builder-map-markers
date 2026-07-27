@@ -5,7 +5,38 @@ import { createModStorage } from '@/infrastructure/persistence/ModStorage'
 const PREFIX = 'subwaybuilder.map-markers.kv.'
 
 afterEach(() => {
+  delete window.electron
   vi.restoreAllMocks()
+})
+
+// Without the game's IPC bridge — which is how the tests below run, and how a build
+// that doesn't expose it would run — localStorage is the whole storage.
+describe('createModStorage with the game s storage available', () => {
+  it('writes to the game s own storage instead of localStorage', async () => {
+    const file = new Map<string, unknown>()
+    window.electron = {
+      invoke: (channel: string, _modId: unknown, key: unknown, value: unknown) => {
+        if (channel === 'mod-storage-set') {
+          file.set(key as string, value)
+        }
+
+        return Promise.resolve(file.has(key as string) ? { success: true, value: file.get(key as string) } : { success: true })
+      },
+    }
+
+    const storage = createModStorage()
+    await storage.set('recent:RMSP', { markers: [] })
+
+    expect(file.get('recent:RMSP')).toEqual({ markers: [] })
+    expect(window.localStorage.getItem(`${PREFIX}recent:RMSP`)).toBeNull()
+  })
+
+  it('still reads a board left behind in localStorage', async () => {
+    window.localStorage.setItem(`${PREFIX}recent:RMSP`, '{"markers":[{"id":"a"}]}')
+    window.electron = { invoke: () => Promise.resolve({ success: true }) }
+
+    expect(await createModStorage().get('recent:RMSP', null)).toEqual({ markers: [{ id: 'a' }] })
+  })
 })
 
 describe('createModStorage', () => {

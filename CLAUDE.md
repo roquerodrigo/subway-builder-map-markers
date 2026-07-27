@@ -29,7 +29,7 @@ single file the game loads; `install-mod` copies it). **`main.tsx` is the entry*
 the controller, installs `SaveScopeRegistrar` and `StationNamer`. Layers: `domain/`
 (pure marker logic + geometry, no map/DOM/window), `application/` (`MarkerStore`,
 `SettingsStore`), `infrastructure/` (the only code that touches the
-map/window/localStorage/React), `presentation/` (the `.tsx` panel), `shared/game/`
+map/window/storage/React), `presentation/` (the `.tsx` panel), `shared/game/`
 (typed game/map contracts).
 
 `MarkerStore` is the **single source of truth**: both the React panel and the
@@ -63,6 +63,12 @@ can't inherit the previous game's markers; loading a save (`onGameLoaded`) makes
 cache readable again. `docs/game-internals.md` §4–6 has the why, the hook behaviors and
 the accepted trade-off. Folders persist next to the markers, in their own `groups:*`
 keys, loaded from the same bucket.
+
+Those buckets live in the game's per-mod file (`<appData>/mod-data/map-markers.json`),
+not in `localStorage` — the renderer can't clear it, and that is exactly how the board
+went missing. `localStorage` is still **read** (boards drawn before the move; its keys
+join `keys()` so the recovery sees them) and never written again. §5 covers the IPC
+channels and why `api.storage` can't be used.
 
 > **The mod deletes no marker data, ever.** Opening the game to the main menu fires
 > `onGameInit` with no save loaded — the state it comes back in after a crash — and is
@@ -136,8 +142,12 @@ game. To re-inject over CDP, the IIFE re-runs
   key first.
 - **A panel registered at mod-load time is wiped on city load.** It's re-registered
   on the lifecycle hooks (unregister-first for a single button).
-- **`api.storage` is a no-op in this build** — a `set` then `get` returns the
-  fallback. Persist through `ModStorage` (localStorage), never `api.storage`.
+- **`api.storage` looks like a no-op but isn't — and still can't be used here.** Every
+  method bails to the fallback unless `currentModId` is set, and the game only sets it
+  while mod code is on the stack (load, and around hook callbacks). A debounced write —
+  all of this mod's — has no mod id and is dropped with a `console.warn`; the wrapper
+  also returns the raw `{success, value}` envelope. Persist through `ModStorage`, which
+  calls the same `mod-storage-*` IPC channels directly. See `docs/game-internals.md` §5.
 - **Don't assume hook ordering.** `onGameInit` can fire *before* the city is known,
   so the new-game reset is held until a city code appears — consuming it on the first
   sync silently loses the reset and the new game inherits the old markers.
