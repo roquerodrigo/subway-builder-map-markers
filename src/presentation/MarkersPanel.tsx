@@ -1,4 +1,8 @@
+import type { DragEvent } from 'react'
+
 import type { Marker } from '@/domain/marker/Marker'
+import type { GroupSectionDrag } from '@/presentation/components/GroupSection'
+import type { MarkerCardDrag } from '@/presentation/components/MarkerCard'
 import type { PanelTab } from '@/presentation/components/TabBar'
 import type { PanelDependencies } from '@/presentation/PanelDependencies'
 
@@ -8,8 +12,15 @@ import { Fragment, h, React } from '@/infrastructure/ui/react'
 import { GroupSection } from '@/presentation/components/GroupSection'
 import { MarkerCard } from '@/presentation/components/MarkerCard'
 import { TabBar } from '@/presentation/components/TabBar'
+import { dropSideOf, useBoardOrdering } from '@/presentation/hooks/useBoardOrdering'
 import { useMarkers, usePlacement } from '@/presentation/hooks/useMarkers'
 import { SettingsTab } from '@/presentation/view/SettingsTab'
+
+// The ungrouped list is a drop target without being an item, so it needs an id of its
+// own to hold the hover hint against. It can't collide with a marker or folder id,
+// which are generated with a `m-`/`g-` prefix.
+const UNGROUPED_DROP_ID = 'ungrouped'
+const UNGROUPED_DROP_STYLE = { borderRadius: '0.5rem', boxShadow: 'inset 0 0 0 1px #3b82f6' }
 
 // The panel content. Two tabs: the marker list (add/edit/remove markers, organize them
 // into folders, hide a folder at a time — all wired to the shared MarkerStore) and the
@@ -21,6 +32,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
   return function MarkersPanel(): JSX.Element {
     const { groups, markers, selectedId } = useMarkers(store)
     const placing = usePlacement(controller)
+    const drag = useBoardOrdering()
     const [tab, setTab] = React.useState<PanelTab>('markers')
     const [confirmClear, setConfirmClear] = React.useState(false)
     const rootRef = React.useRef<HTMLDivElement>(null)
@@ -62,8 +74,91 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
       setConfirmClear(false)
     }
 
+    // Dropping a marker on a card puts it there and hands it that card's folder;
+    // dropping it on a folder appends it; dropping it on the ungrouped list takes it
+    // out of every folder. A folder dropped on a folder reorders them.
+    const cardDrag = (markerId: string): MarkerCardDrag => ({
+      dragging: drag.dragged?.kind === 'marker' && drag.dragged.id === markerId,
+      hint: drag.dragged?.kind === 'marker' && drag.hint?.id === markerId ? drag.hint.side : null,
+      onDragEnd: drag.end,
+      onDragLeave: () => drag.leave(markerId),
+      onDragOver: (event) => {
+        if (drag.dragged?.kind !== 'marker' || drag.dragged.id === markerId) {
+          return
+        }
+        // The card sits inside its folder, which is a drop target of its own: without
+        // this the folder would light up as if the marker were about to join it at the
+        // end, while the card is offering a place in the middle.
+        event.stopPropagation()
+        event.preventDefault()
+        drag.hover(markerId, dropSideOf(event))
+      },
+      onDragStart: (event) => drag.begin({ id: markerId, kind: 'marker' }, event),
+      onDrop: (event) => {
+        const dragged = drag.dragged
+        drag.end()
+        if (dragged?.kind !== 'marker') {
+          return
+        }
+        event.stopPropagation()
+        event.preventDefault()
+        store.moveMarker(dragged.id, markerId, dropSideOf(event))
+      },
+    })
+
+    const groupDrag = (groupId: string): GroupSectionDrag => ({
+      cardDrag,
+      dragging: drag.dragged?.kind === 'group' && drag.dragged.id === groupId,
+      hint: drag.dragged?.kind === 'group' && drag.hint?.id === groupId ? drag.hint.side : null,
+      markerHovering: drag.dragged?.kind === 'marker' && drag.hint?.id === groupId,
+      onDragEnd: drag.end,
+      onDragOver: (event) => {
+        if (!drag.dragged || (drag.dragged.kind === 'group' && drag.dragged.id === groupId)) {
+          return
+        }
+        event.preventDefault()
+        drag.hover(groupId, drag.dragged.kind === 'group' ? dropSideOf(event) : 'after')
+      },
+      onDragStart: (event) => drag.begin({ id: groupId, kind: 'group' }, event),
+      onDrop: (event) => {
+        const dragged = drag.dragged
+        drag.end()
+        if (!dragged) {
+          return
+        }
+        event.preventDefault()
+        if (dragged.kind === 'group') {
+          store.moveGroup(dragged.id, groupId, dropSideOf(event))
+        } else {
+          store.moveMarkerToGroup(dragged.id, groupId)
+        }
+      },
+      onLeave: () => drag.leave(groupId),
+    })
+
+    const dropOutOfFolders = {
+      onDragLeave: () => drag.leave(UNGROUPED_DROP_ID),
+      onDragOver: (event: DragEvent<HTMLElement>) => {
+        if (drag.dragged?.kind !== 'marker') {
+          return
+        }
+        event.preventDefault()
+        drag.hover(UNGROUPED_DROP_ID, 'after')
+      },
+      onDrop: (event: DragEvent<HTMLElement>) => {
+        const dragged = drag.dragged
+        drag.end()
+        if (dragged?.kind !== 'marker') {
+          return
+        }
+        event.preventDefault()
+        store.moveMarkerToGroup(dragged.id, null)
+      },
+    }
+
     const markerCard = (marker: Marker, withFolders: boolean): JSX.Element => (
       <MarkerCard
+        drag={cardDrag(marker.id)}
         groups={withFolders ? groups : undefined}
         key={marker.id}
         marker={marker}
@@ -90,19 +185,33 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
       }
       const { sections, ungrouped } = partitionByGroup(markers, groups)
 
+      // Empty, this list is only somewhere to drop a marker — so it shows up while one
+      // is being dragged and stays out of the way otherwise. A board filed entirely
+      // into folders would otherwise carry a permanent empty heading.
+      const showUngrouped = ungrouped.length > 0 || drag.dragged?.kind === 'marker'
+
       return (
         <>
-          {ungrouped.length > 0 ?
+          {showUngrouped ?
               (
-                <div className="space-y-2">
+                <div
+                  className="space-y-2"
+                  onDragLeave={dropOutOfFolders.onDragLeave}
+                  onDragOver={dropOutOfFolders.onDragOver}
+                  onDrop={dropOutOfFolders.onDrop}
+                  style={drag.hint?.id === UNGROUPED_DROP_ID ? UNGROUPED_DROP_STYLE : undefined}
+                >
                   <div className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Ungrouped</div>
-                  {ungrouped.map((marker) => markerCard(marker, true))}
+                  {ungrouped.length === 0 ?
+                      <p className="px-1 text-xs text-muted-foreground">Drop a marker here to take it out of its folder.</p> :
+                      ungrouped.map((marker) => markerCard(marker, true))}
                 </div>
               ) :
             null}
           {sections.map((section) => (
             <GroupSection
               collapsed={section.group.collapsed}
+              drag={groupDrag(section.group.id)}
               group={section.group}
               groups={groups}
               key={section.group.id}

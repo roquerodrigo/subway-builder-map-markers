@@ -1,14 +1,31 @@
+import type { DragEvent } from 'react'
+
 import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
+import type { DropSide } from '@/domain/ordering/ItemOrder'
 
 import { markerIcon } from '@/domain/marker/MarkerIconSet'
 import { h, React } from '@/infrastructure/ui/react'
 import { ColorSwatches } from '@/presentation/components/ColorSwatches'
+import { DragHandle } from '@/presentation/components/DragHandle'
 import { IconGlyph } from '@/presentation/components/IconGlyph'
 import { IconPicker } from '@/presentation/components/IconPicker'
-import { CARD_CLASS, selectedCardStyle } from '@/presentation/theme'
+import { CARD_CLASS, dropIndicatorShadow, selectedCardStyle } from '@/presentation/theme'
+
+// Everything the card needs to take part in a reorder. Absent, the card renders exactly
+// as it did before, which is what the tests around a lone card rely on.
+export interface MarkerCardDrag {
+  dragging: boolean
+  hint: DropSide | null
+  onDragEnd: () => void
+  onDragLeave: () => void
+  onDragOver: (event: DragEvent<HTMLElement>) => void
+  onDragStart: (event: DragEvent<HTMLElement>) => void
+  onDrop: (event: DragEvent<HTMLElement>) => void
+}
 
 export interface MarkerCardProps {
+  drag?: MarkerCardDrag
   // The folders a marker can be moved into. Absent/empty hides the folder picker, so a
   // board with no folders keeps the card unchanged.
   groups?: MarkerGroup[]
@@ -34,7 +51,7 @@ const CONTROL_LAYER = { position: 'relative', zIndex: 1 } as const
 // centres the map on the marker. Selecting the card highlights the matching badge on
 // the map (and vice-versa).
 export function MarkerCard(
-  { groups, marker, onAssign, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps,
+  { drag, groups, marker, onAssign, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps,
 ): JSX.Element {
   const cardRef = React.useRef<HTMLDivElement>(null)
 
@@ -50,10 +67,16 @@ export function MarkerCard(
   return (
     <div
       className={CARD_CLASS}
+      onDragLeave={drag?.onDragLeave}
+      onDragOver={drag?.onDragOver}
+      onDrop={drag?.onDrop}
       ref={cardRef}
-      style={{ position: 'relative', ...(selected ? selectedCardStyle(marker.color) : {}) }}
+      style={cardStyle(marker.color, selected, drag)}
     >
       <div className="flex items-center gap-2" style={CONTROL_LAYER}>
+        {drag ?
+            <DragHandle label="Reorder marker" onDragEnd={drag.onDragEnd} onDragStart={drag.onDragStart} /> :
+          null}
         <button
           aria-label="Highlight marker on the map"
           aria-pressed={selected}
@@ -125,4 +148,19 @@ export function MarkerCard(
       />
     </div>
   )
+}
+
+// Selection colours the card; a drop hint draws a line on the edge the marker would
+// land against. Both are box-shadows, so a card that is selected and hovered keeps
+// showing the selection under the line.
+function cardStyle(color: string, selected: boolean, drag: MarkerCardDrag | undefined): Record<string, string> {
+  const style: Record<string, string> = { position: 'relative', ...(selected ? selectedCardStyle(color) : {}) }
+  if (drag?.hint) {
+    style.boxShadow = [style.boxShadow, dropIndicatorShadow(drag.hint)].filter(Boolean).join(', ')
+  }
+  if (drag?.dragging) {
+    style.opacity = '0.4'
+  }
+
+  return style
 }

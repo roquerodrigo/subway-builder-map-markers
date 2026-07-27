@@ -1,7 +1,17 @@
+import type { DropSide } from '@/domain/ordering/ItemOrder'
+
 // Small shared styling constants for the panel. Spacing sticks to the integer
 // Tailwind steps the game's prebuilt CSS actually ships — fractional ones like
 // `space-y-2.5` aren't generated and would collapse to 0.
 export const CARD_CLASS = 'rounded-lg border border-border bg-primary/5 p-3 space-y-2'
+
+// The line marking where a dragged item would land. Drawn as an outer box-shadow on the
+// edge it would sit against: the list's row gap leaves room above and below a card,
+// which is exactly where this has to show (an inset line would read as a border of the
+// card itself, and the sides are clipped anyway — see the note below).
+export function dropIndicatorShadow(side: DropSide): string {
+  return side === 'before' ? '0 -3px 0 -1px #3b82f6' : '0 3px 0 -1px #3b82f6'
+}
 
 // Selection is styled inline, not with `ring-*` classes: the game's prebuilt Tailwind
 // doesn't ship `ring-primary/70`, so it silently rendered Tailwind's *default* blue
