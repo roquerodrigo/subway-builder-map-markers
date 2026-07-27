@@ -33,6 +33,11 @@ const PERSIST_DEBOUNCE_MS = 250
 // sessions, so dropping it strands the markers in save buckets the game will not
 // reopen (it keeps 2 autosaves per city). That cost the user their board twice.
 //
+// And because that cache can still go missing — it was deleted from under the mod a
+// third time, by something outside it — a board that neither lookup finds is searched
+// for across every bucket of the same city before the map is drawn empty. Stranded is
+// not lost: the markers are still filed under the saves they were drawn in.
+//
 // Folders let the player organize markers (e.g. one folder per line) and hide a whole
 // folder at once: a hidden folder's markers stay in the panel but drop off the map (see
 // visibleMarkers, which the controller draws).
@@ -332,8 +337,8 @@ export class MarkerStore {
       return
     }
     if (pending.saveId) {
-      await this.repository.saveForSave(pending.saveId, pending.markers)
-      await this.repository.saveGroupsForSave(pending.saveId, pending.groups)
+      await this.repository.saveForSave(pending.saveId, pending.markers, pending.city)
+      await this.repository.saveGroupsForSave(pending.saveId, pending.groups, pending.city)
     }
     if (pending.city) {
       await this.repository.saveRecent(pending.city, pending.markers)
@@ -341,8 +346,15 @@ export class MarkerStore {
     }
   }
 
-  // Save's own bucket, empty on load → inherit the city's recent board → empty. Markers
-  // gate the choice; the folders of the same bucket come along with them.
+  // Save's own bucket, empty on load → inherit the city's recent board → the newest
+  // board this city has in any bucket → empty. Markers gate the choice; the folders of
+  // the same bucket come along with them.
+  //
+  // That third step is what keeps a lost key from reading as a lost board: the game
+  // reopens a fresh autosave whose bucket is empty, and if the city cache is gone too
+  // — it has been deleted out from under the mod — the board is still there, filed
+  // under the saves it was drawn in. Showing an empty map with the board one bucket
+  // away is how the player's work went missing.
   private async loadData(saveId: null | string, city: null | string): Promise<{ groups: MarkerGroup[], markers: Marker[] }> {
     if (saveId) {
       const own = await this.repository.loadForSave(saveId)
@@ -351,10 +363,14 @@ export class MarkerStore {
       }
     }
     if (city && this.inheritsCityCache) {
-      return {
-        groups: await this.repository.loadGroupsRecent(city),
-        markers: await this.repository.loadRecent(city),
+      const recent = await this.repository.loadRecent(city)
+      const groups = await this.repository.loadGroupsRecent(city)
+      if (recent.length > 0) {
+        return { groups, markers: recent }
       }
+      const recovered = await this.repository.loadLatestForCity(city)
+
+      return recovered ?? { groups, markers: [] }
     }
 
     return { groups: [], markers: [] }

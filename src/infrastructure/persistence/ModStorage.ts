@@ -3,6 +3,7 @@
 export interface ModStorage {
   delete(key: string): Promise<void>
   get<T>(key: string, fallback: T): Promise<T>
+  keys(): Promise<string[]>
   set(key: string, value: unknown): Promise<void>
 }
 
@@ -32,6 +33,19 @@ export function createModStorage(): ModStorage {
         return Promise.resolve(raw === null ? fallback : (JSON.parse(raw) as T))
       } catch {
         return Promise.resolve(fallback)
+      }
+    },
+    // Every key the mod owns, prefix stripped. Reading them all is how a lost board is
+    // found again when the key that should have held it is gone.
+    keys: () => {
+      try {
+        const found = Object.keys(window.localStorage)
+          .filter((key) => key.startsWith(PREFIX))
+          .map((key) => key.slice(PREFIX.length))
+
+        return Promise.resolve(found)
+      } catch {
+        return Promise.resolve([])
       }
     },
     set: (key, value) => {

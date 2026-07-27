@@ -52,7 +52,12 @@ them. The alias is a compile-time concept: it's gone from `dist/index.js`.
 Markers are keyed by the loaded save (`save:<currentSaveInfo.id>`), with a per-city
 cache (`recent:<cityCode>`) for continuity: the game reopens the **newest autosave** —
 a different file every session — so a save's own bucket is usually empty on load and
-inherits from the cache. Load order: **own bucket → city cache → empty**. A brand-new
+inherits from the cache. Load order: **own bucket → city cache → newest bucket of this
+city → empty**. That third step exists because the cache went missing a third time
+(2026-07-25) even though the mod deletes nothing: every payload now records its `city`
+and `savedAt`, so a stranded board is found in whatever bucket still holds it instead of
+the map drawing empty. Schema version **stays at 1** — bumping it would discard every
+board already on disk. A brand-new
 game starts empty and **stops reading the city cache** — it never deletes it — so it
 can't inherit the previous game's markers; loading a save (`onGameLoaded`) makes the
 cache readable again. `docs/game-internals.md` §4–6 has the why, the hook behaviors and

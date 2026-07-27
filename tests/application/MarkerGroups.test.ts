@@ -214,10 +214,10 @@ describe('MarkerStore folders', () => {
       const { repository, state, store } = createFixture()
       await repository.saveForSave('/saves/a.metro', [
         { color: '#fff', groupId: 'g1', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
-      ])
+      ], null)
       await repository.saveGroupsForSave('/saves/a.metro', [
         { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' },
-      ])
+      ], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
       expect(store.groups().map((group) => group.name)).toEqual(['Line 1'])
