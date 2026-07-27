@@ -76,17 +76,37 @@ describe('MarkerCard', () => {
     expect(screen.getByRole('button', { name: 'Highlight marker on the map' }).getAttribute('aria-pressed')).toBe('true')
   })
 
-  it('centres the map on the marker from the focus action', () => {
+  it('centres the map on the marker from the space around the controls', () => {
     const { onFocus } = renderCard()
-    fireEvent.click(screen.getByRole('button', { name: 'Center on the map' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Centre the map on this marker' }))
     expect(onFocus).toHaveBeenCalledOnce()
   })
 
   it('does not select the marker when only centring on it', () => {
     const { onFocus, onSelect } = renderCard()
-    fireEvent.click(screen.getByRole('button', { name: 'Center on the map' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Centre the map on this marker' }))
     expect(onFocus).toHaveBeenCalledOnce()
     expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  // The centring button is stretched behind every control, so each one has to keep its
+  // own click — centring the map instead of renaming a marker or picking a colour
+  // would make the card unusable.
+  it('does not centre the map when a control inside the card is used', () => {
+    const { onFocus } = renderCard()
+    fireEvent.click(screen.getByLabelText('Marker name'))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove marker' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Highlight marker on the map' }))
+    expect(onFocus).not.toHaveBeenCalled()
+  })
+
+  // A real button rather than a clickable card, so the keyboard and screen readers get
+  // the behaviour for free instead of it being reimplemented on a <div>.
+  it('exposes centring as a button, not as a click handler on the card', () => {
+    const { card } = renderCard()
+    const centre = screen.getByRole('button', { name: 'Centre the map on this marker' })
+    expect(centre.tagName).toBe('BUTTON')
+    expect(card.getAttribute('tabindex')).toBeNull()
   })
 
   it('removes the marker from the remove action', () => {
@@ -110,9 +130,13 @@ describe('MarkerCard', () => {
     expect(card.style.background).toBe('rgba(239, 68, 68, 0.06)')
   })
 
-  it('leaves an unselected card unstyled', () => {
+  // The card positions the centring button behind it, so it always carries that much
+  // style; what an unselected card must not carry is the selection colouring.
+  it('leaves an unselected card without selection styling', () => {
     const { card } = renderCard()
-    expect(card.getAttribute('style')).toBeNull()
+    expect(card.style.background).toBe('')
+    expect(card.style.borderColor).toBe('')
+    expect(card.style.boxShadow).toBe('')
   })
 
   it('scrolls a selected card into view, because selection often starts on the map', () => {
