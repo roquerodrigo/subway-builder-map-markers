@@ -62,7 +62,8 @@ export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
           value={current.idleOpacity}
         />
         <p className="text-xs text-muted-foreground">
-          Keeps the markers subtle while you play. They are always fully opaque with the panel open.
+          Keeps the markers subtle while you play — at 0% they are hidden entirely. They are always
+          fully opaque with the panel open.
         </p>
       </div>
 
@@ -104,6 +105,9 @@ export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
 
 function idleOpacitySummary(idleOpacity: number): string {
   const percent = `${Math.round(idleOpacity * 100)}%`
+  if (idleOpacity <= MIN_IDLE_OPACITY) {
+    return `${percent} · hidden`
+  }
 
   return idleOpacity >= MAX_IDLE_OPACITY ? `${percent} · no fading` : percent
 }

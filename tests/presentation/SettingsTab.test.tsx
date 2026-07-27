@@ -77,7 +77,7 @@ describe('SettingsTab idle opacity', () => {
     renderTab()
     const slider = screen.getByLabelText<HTMLInputElement>('Opacity while the panel is closed')
     expect(slider.type).toBe('range')
-    expect(slider.min).toBe('0.1')
+    expect(slider.min).toBe('0')
     expect(slider.max).toBe('1')
     expect(slider.step).toBe('0.05')
     expect(slider.value).toBe('0.5')
@@ -91,6 +91,12 @@ describe('SettingsTab idle opacity', () => {
   it('spells out that a full idle opacity means no fading at all', () => {
     renderTab({ idleOpacity: 1 })
     expect(screen.getByText('100% · no fading')).toBeDefined()
+  })
+
+  // A bare "0%" reads like a broken overlay; saying it is hidden makes it a choice.
+  it('spells out that a zero idle opacity hides the overlay', () => {
+    renderTab({ idleOpacity: 0 })
+    expect(screen.getByText('0% · hidden')).toBeDefined()
   })
 
   it('rounds an awkward idle opacity to a whole percentage', () => {
