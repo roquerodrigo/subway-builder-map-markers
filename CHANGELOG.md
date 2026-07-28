@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.2.0...v1.2.1) (2026-07-28)
+
+
+### Miscellaneous Chores
+
+* allow installing on any game version from 1.4.0 up ([9dee796](https://github.com/roquerodrigo/subway-builder-map-markers/commit/9dee796507069ce0743a3a015cf7d2f67413916a))
+
 ## [1.2.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.1.1...v1.2.0) (2026-07-27)
 
 

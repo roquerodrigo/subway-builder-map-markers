@@ -1,6 +1,6 @@
 {
   "name": "subway-builder-map-markers",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Subway Builder mod that adds draggable map markers with a color, an icon and an optional 1 km influence radius, for sketching where future stations could go.",
   "private": true,
   "type": "module",
