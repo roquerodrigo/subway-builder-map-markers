@@ -56,14 +56,14 @@ function createStoreDouble(initial: Marker[] = [], initialGroups: MarkerGroup[] 
 
   return {
     addGroup: vi.fn((name: string) => {
-      const group: MarkerGroup = { collapsed: false, color: null, hidden: false, id: `g${groups.length + 1}`, name }
+      const group: MarkerGroup = { collapsed: false, color: null, hidden: false, id: `g${groups.length + 1}`, markerIds: [], name }
       groups = [...groups, group]
       notify()
 
       return group
     }),
+    addToGroup: vi.fn(),
     all: () => markers,
-    assignToGroup: vi.fn(),
     clear: vi.fn(() => {
       markers = []
       notify()
@@ -71,8 +71,8 @@ function createStoreDouble(initial: Marker[] = [], initialGroups: MarkerGroup[] 
     groups: () => groups,
     moveGroup: vi.fn(),
     moveMarker: vi.fn(),
-    moveMarkerToGroup: vi.fn(),
     remove: vi.fn(),
+    removeFromGroup: vi.fn(),
     removeGroup: vi.fn((id: string) => {
       groups = groups.filter((group) => group.id !== id)
       notify()
@@ -294,15 +294,22 @@ describe('MarkersPanel remove all', () => {
 })
 
 describe('MarkersPanel folders', () => {
-  function grouped(id: string, label: string, groupId: string): Marker {
-    return { ...createMarker(id, label), groupId }
-  }
+  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: ['a'], name: 'Line 1' }
 
-  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
+  function grouped(id: string, label: string): Marker {
+    return createMarker(id, label)
+  }
 
   it('offers no folder affordance on an empty board', () => {
     renderPanel()
     expect(screen.queryByRole('button', { name: /New folder/ })).toBeNull()
+  })
+
+  it('lists a marker under every folder holding it', () => {
+    const line2: MarkerGroup = { collapsed: false, color: null, hidden: false, id: 'g2', markerIds: ['a'], name: 'Line 2' }
+    renderPanel([grouped('a', 'Central')], [line1, line2])
+    expect(screen.getAllByLabelText('Marker name')).toHaveLength(2)
+    expect(screen.queryByText('Ungrouped')).toBeNull()
   })
 
   it('offers a New folder button once there are markers and creates one on click', () => {
@@ -315,57 +322,66 @@ describe('MarkersPanel folders', () => {
   it('renders a card list flat while there are no folders', () => {
     renderPanel([createMarker('a', 'Central')])
     expect(screen.queryByLabelText('Folder name')).toBeNull()
-    expect(screen.queryByLabelText('Move to folder')).toBeNull()
+    expect(screen.queryByLabelText('Add to folder')).toBeNull()
   })
 
   it('groups a marker under its folder header', () => {
-    renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    renderPanel([grouped('a', 'Central')], [line1])
     expect(screen.getByLabelText<HTMLInputElement>('Folder name').value).toBe('Line 1')
     expect(screen.getByLabelText('Marker name')).toBeDefined()
   })
 
   it('shows an "Ungrouped" section for markers outside every folder', () => {
-    renderPanel([grouped('a', 'Central', 'g1'), createMarker('b', 'Sé')], [line1])
+    renderPanel([grouped('a', 'Central'), createMarker('b', 'Sé')], [line1])
     expect(screen.getByText('Ungrouped')).toBeDefined()
   })
 
   it('hides a folder from its header', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    const { store } = renderPanel([grouped('a', 'Central')], [line1])
     fireEvent.click(screen.getByRole('button', { name: 'Hide folder' }))
     expect(store.toggleGroupHidden).toHaveBeenCalledWith('g1')
   })
 
   it('removes a folder from its header', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    const { store } = renderPanel([grouped('a', 'Central')], [line1])
     fireEvent.click(screen.getByRole('button', { name: 'Remove folder' }))
     expect(store.removeGroup).toHaveBeenCalledWith('g1')
   })
 
-  it('moves a marker to another folder from its card', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
-    fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
-    expect(store.assignToGroup).toHaveBeenCalledWith('a', null)
+  it('takes a marker off a folder from its card', () => {
+    const { store } = renderPanel([grouped('a', 'Central')], [line1])
+    fireEvent.click(screen.getByRole('button', { name: 'Take off Line 1' }))
+    expect(store.removeFromGroup).toHaveBeenCalledWith('a', 'g1')
+  })
+
+  // An interchange is on every line that stops there, so a card can join a second
+  // folder without leaving the first.
+  it('puts a marker on a second folder from its card', () => {
+    const line2: MarkerGroup = { collapsed: false, color: null, hidden: false, id: 'g2', markerIds: [], name: 'Line 2' }
+    const { store } = renderPanel([grouped('a', 'Central')], [line1, line2])
+    fireEvent.change(screen.getAllByLabelText('Add to folder')[0], { target: { value: 'g2' } })
+    expect(store.addToGroup).toHaveBeenCalledWith('a', 'g2')
   })
 
   it('persists a collapse through the store rather than local state', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    const { store } = renderPanel([grouped('a', 'Central')], [line1])
     fireEvent.click(screen.getByRole('button', { name: 'Collapse folder' }))
     expect(store.toggleGroupCollapsed).toHaveBeenCalledWith('g1')
   })
 
   it('renders a folder folded when the store says it is collapsed', () => {
-    renderPanel([grouped('a', 'Central', 'g1')], [{ ...line1, collapsed: true }])
+    renderPanel([grouped('a', 'Central')], [{ ...line1, collapsed: true }])
     expect(screen.queryByLabelText('Marker name')).toBeNull()
     expect(screen.getByRole('button', { name: 'Expand folder' })).toBeDefined()
   })
 })
 
 describe('MarkersPanel reordering', () => {
-  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
-  const line2: MarkerGroup = { collapsed: false, color: '#e11d48', hidden: false, id: 'g2', name: 'Line 2' }
+  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: ['b'], name: 'Line 1' }
+  const line2: MarkerGroup = { collapsed: false, color: '#e11d48', hidden: false, id: 'g2', markerIds: [], name: 'Line 2' }
 
-  function grouped(id: string, label: string, groupId: null | string): Marker {
-    return { ...createMarker(id, label), groupId }
+  function grouped(id: string, label: string): Marker {
+    return createMarker(id, label)
   }
 
   // jsdom lays nothing out, so every box is 0×0; giving the target a height is what
@@ -395,39 +411,50 @@ describe('MarkersPanel reordering', () => {
     const { store } = renderPanel([createMarker('a', 'Central'), createMarker('b', 'Sé')])
     startDragging('Reorder marker', 0)
     dropAt(cards()[1], 80)
-    expect(store.moveMarker).toHaveBeenCalledWith('a', 'b', 'after')
+    expect(store.moveMarker).toHaveBeenCalledWith(
+      { from: null, markerId: 'a', to: null },
+      { id: 'b', side: 'after' },
+    )
   })
 
   it('drops a marker above the card it was dragged onto', () => {
     const { store } = renderPanel([createMarker('a', 'Central'), createMarker('b', 'Sé')])
     startDragging('Reorder marker', 1)
     dropAt(cards()[0], 10)
-    expect(store.moveMarker).toHaveBeenCalledWith('b', 'a', 'before')
+    expect(store.moveMarker).toHaveBeenCalledWith(
+      { from: null, markerId: 'b', to: null },
+      { id: 'a', side: 'before' },
+    )
   })
 
   it('ignores a marker dropped on itself', () => {
     const { store } = renderPanel([createMarker('a', 'Central')])
     startDragging('Reorder marker', 0)
     dropAt(cards()[0], 80)
-    expect(store.moveMarker).toHaveBeenCalledWith('a', 'a', 'after')
+    expect(store.moveMarker).toHaveBeenCalledWith(
+      { from: null, markerId: 'a', to: null },
+      { id: 'a', side: 'after' },
+    )
   })
 
   it('drops a marker into the folder it was dragged onto', () => {
-    const { store } = renderPanel([grouped('a', 'Central', null), grouped('b', 'Sé', 'g1')], [line1])
+    const { store } = renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1])
     startDragging('Reorder marker', 0)
     dropAt(screen.getByLabelText('Folder name').closest('div')?.parentElement as HTMLElement, 0)
-    expect(store.moveMarkerToGroup).toHaveBeenCalledWith('a', 'g1')
+    expect(store.moveMarker).toHaveBeenCalledWith({ from: null, markerId: 'a', to: 'g1' })
   })
 
-  it('drops a marker onto the ungrouped list to take it out of its folder', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1')], [line1])
-    startDragging('Reorder marker', 0)
+  // The drag started inside the folder, so that is the line the marker leaves.
+  it('drops a marker onto the ungrouped list to take it off the folder it came from', () => {
+    const { store } = renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1])
+    // The ungrouped list is drawn first, so the folder's own card is the second one.
+    startDragging('Reorder marker', 1)
     dropAt(screen.getByText('Ungrouped').parentElement as HTMLElement, 0)
-    expect(store.moveMarkerToGroup).toHaveBeenCalledWith('a', null)
+    expect(store.moveMarker).toHaveBeenCalledWith({ from: 'g1', markerId: 'b', to: null })
   })
 
   it('reorders folders against each other', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1'), grouped('b', 'Sé', 'g2')], [line1, line2])
+    const { store } = renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1, line2])
     startDragging('Reorder folder', 0)
     const target = screen.getAllByLabelText('Folder name')[1].closest('div')?.parentElement as HTMLElement
     dropAt(target, 80)
@@ -437,11 +464,11 @@ describe('MarkersPanel reordering', () => {
   // A folder dropped on a folder reorders; a marker dropped on one joins it. Reading the
   // wrong one would either scramble the folders or swallow a marker.
   it('does not treat a dragged folder as a marker joining another folder', () => {
-    const { store } = renderPanel([grouped('a', 'Central', 'g1'), grouped('b', 'Sé', 'g2')], [line1, line2])
+    const { store } = renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1, line2])
     startDragging('Reorder folder', 0)
     const target = screen.getAllByLabelText('Folder name')[1].closest('div')?.parentElement as HTMLElement
     dropAt(target, 10)
-    expect(store.moveMarkerToGroup).not.toHaveBeenCalled()
+    expect(store.moveMarker).not.toHaveBeenCalled()
   })
 
   it('leaves the board alone when a drop lands with nothing being dragged', () => {
@@ -452,10 +479,10 @@ describe('MarkersPanel reordering', () => {
 })
 
 describe('MarkersPanel reordering feedback', () => {
-  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' }
+  const line1: MarkerGroup = { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: ['a'], name: 'Line 1' }
 
-  function grouped(id: string, label: string, groupId: null | string): Marker {
-    return { ...createMarker(id, label), groupId }
+  function grouped(id: string, label: string): Marker {
+    return createMarker(id, label)
   }
 
   function cards(): HTMLElement[] {
@@ -530,7 +557,7 @@ describe('MarkersPanel reordering feedback', () => {
   })
 
   it('lights up the folder a marker is about to join', () => {
-    renderPanel([grouped('a', 'Central', null), grouped('b', 'Sé', 'g1')], [line1])
+    renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1])
     const section = screen.getByLabelText('Folder name').closest('div')?.parentElement as HTMLElement
     startDragging('Reorder marker', 0)
     dragOver(section, 10)
@@ -540,7 +567,7 @@ describe('MarkersPanel reordering feedback', () => {
   // The card offers a place in the middle of the folder; the folder offers its end.
   // Only one of them can be showing.
   it('does not light up the folder while a card inside it offers the drop', () => {
-    renderPanel([grouped('a', 'Central', null), grouped('b', 'Sé', 'g1')], [line1])
+    renderPanel([grouped('a', 'Central'), grouped('b', 'Sé')], [line1])
     const section = screen.getByLabelText('Folder name').closest('div')?.parentElement as HTMLElement
     startDragging('Reorder marker', 0)
     dragOver(cards()[1], 10)
@@ -548,7 +575,7 @@ describe('MarkersPanel reordering feedback', () => {
   })
 
   it('outlines the ungrouped list when a marker is dragged over it', () => {
-    renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    renderPanel([grouped('a', 'Central')], [line1])
     startDragging('Reorder marker', 0)
     const ungrouped = screen.getByText('Ungrouped').parentElement as HTMLElement
     dragOver(ungrouped, 10)
@@ -558,7 +585,7 @@ describe('MarkersPanel reordering feedback', () => {
   // A board filed entirely into folders would otherwise carry a permanent empty
   // heading; the list is only useful as somewhere to drop a marker.
   it('keeps the empty ungrouped list out of the way until a marker is dragged', () => {
-    renderPanel([grouped('a', 'Central', 'g1')], [line1])
+    renderPanel([grouped('a', 'Central')], [line1])
     expect(screen.queryByText('Ungrouped')).toBeNull()
     startDragging('Reorder marker', 0)
     expect(screen.getByText('Ungrouped')).toBeDefined()
@@ -567,7 +594,7 @@ describe('MarkersPanel reordering feedback', () => {
   })
 
   it('always shows the ungrouped list when it has markers in it', () => {
-    renderPanel([grouped('a', 'Central', null)], [line1])
+    renderPanel([grouped('a', 'Central'), createMarker('b', 'Sé')], [line1])
     expect(screen.getByText('Ungrouped')).toBeDefined()
   })
 })

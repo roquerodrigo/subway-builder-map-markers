@@ -30,10 +30,14 @@ export interface GroupSectionProps {
   group: MarkerGroup
   groups: MarkerGroup[]
   markers: Marker[]
-  onAssign: (markerId: string, groupId: null | string) => void
+  // The folders each of this folder's markers is on, by marker id: a marker where two
+  // lines meet is listed in both, and its card says so.
+  memberships: (markerId: string) => MarkerGroup[]
+  onAddToGroup: (markerId: string, groupId: string) => void
   onDelete: () => void
   onFocus: (id: string) => void
   onRemove: (id: string) => void
+  onRemoveFromGroup: (markerId: string, groupId: string) => void
   onRename: (name: string) => void
   onSelect: (id: string) => void
   onSortAlongPath: () => void
@@ -48,7 +52,7 @@ export interface GroupSectionProps {
 // drops its markers off the map but keeps them here so they can be edited or shown
 // again; removing a folder keeps its markers (they fall back to "no folder").
 export function GroupSection(props: GroupSectionProps): JSX.Element {
-  const { collapsed, drag, group, groups, markers, onAssign, onDelete, onFocus, onRemove, onRename, onSelect, onSortAlongPath, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
+  const { collapsed, drag, group, groups, markers, memberships, onAddToGroup, onDelete, onFocus, onRemove, onRemoveFromGroup, onRename, onSelect, onSortAlongPath, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
   const swatch = group.color ?? '#64748b'
 
   return (
@@ -140,9 +144,11 @@ export function GroupSection(props: GroupSectionProps): JSX.Element {
                       groups={groups}
                       key={marker.id}
                       marker={marker}
-                      onAssign={(groupId) => onAssign(marker.id, groupId)}
+                      memberships={memberships(marker.id)}
+                      onAddToGroup={(groupId) => onAddToGroup(marker.id, groupId)}
                       onFocus={() => onFocus(marker.id)}
                       onRemove={() => onRemove(marker.id)}
+                      onRemoveFromGroup={(groupId) => onRemoveFromGroup(marker.id, groupId)}
                       onSelect={() => onSelect(marker.id)}
                       onUpdate={(patch) => onUpdate(marker.id, patch)}
                       selected={marker.id === selectedId}

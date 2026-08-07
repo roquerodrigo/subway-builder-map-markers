@@ -81,7 +81,7 @@ describe('MapMarkersController', () => {
   function fillFolder(name: string, positions: [number, number][]): MarkerGroup {
     const group = store.addGroup(name)
     for (const position of positions) {
-      store.assignToGroup(store.add(position).id, group.id)
+      store.addToGroup(store.add(position).id, group.id)
     }
 
     return group
@@ -435,7 +435,7 @@ describe('MapMarkersController', () => {
     it('drops the markers of a hidden folder off the map', () => {
       const group = store.addGroup('Line 1')
       const marker = store.add([1, 2])
-      store.assignToGroup(marker.id, group.id)
+      store.addToGroup(marker.id, group.id)
       controller.start()
       expect(badgeRootsOf(map)).toHaveLength(1)
       store.setGroupHidden(group.id, true)
@@ -445,10 +445,22 @@ describe('MapMarkersController', () => {
     it('still draws ungrouped markers while a folder is hidden', () => {
       const group = store.addGroup('Line 1')
       const inFolder = store.add([1, 2])
-      store.assignToGroup(inFolder.id, group.id)
+      store.addToGroup(inFolder.id, group.id)
       store.add([3, 4])
       controller.start()
       store.setGroupHidden(group.id, true)
+      expect(badgeRootsOf(map)).toHaveLength(1)
+    })
+
+    // An interchange stays on the map while any one of its lines is still shown.
+    it('keeps a marker two folders hold while one of them is shown', () => {
+      const hidden = store.addGroup('Line 1')
+      const shown = store.addGroup('Line 2')
+      const marker = store.add([1, 2])
+      store.addToGroup(marker.id, hidden.id)
+      store.addToGroup(marker.id, shown.id)
+      controller.start()
+      store.setGroupHidden(hidden.id, true)
       expect(badgeRootsOf(map)).toHaveLength(1)
     })
 

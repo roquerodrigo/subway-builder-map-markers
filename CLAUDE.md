@@ -10,7 +10,17 @@ the host at runtime (never bundled). Conventions mirror the sibling mod
 
 Markers can be organized into **folders** (one per line, say), each foldable and
 hideable on its own; and, as an **opt-in** setting, a station the player builds inside
-a marker's influence area is **renamed to that marker's label**. A folder's markers are
+a marker's influence area is **renamed to that marker's label**.
+
+**A folder holds its markers, not the other way round.** `MarkerGroup.markerIds` is an
+ordered list of marker ids — that order *is* the line — and the same id may sit in
+several folders, because an interchange is on every line that stops there and each of
+those lines reaches it at a different point. `Marker.groupId` is legacy: written as a
+mirror of the first folder holding a marker (so an older build still opens the board)
+and read only to migrate a folder that carries no sequence yet
+(`domain/group/LegacyGroupLink`). Dragging a card **moves** it between folders; the
+card's folder chips are what put one marker on a second line. A marker leaves the map
+only when *every* folder holding it is hidden. A folder's markers are
 also joined by a **smooth dashed guide line** (`showRouteLines`, on by default) — a
 centripetal Catmull-Rom curve through them, in panel order, sampled into the geometry
 because a GL line layer only joins vertices with straight segments; dashed so it never

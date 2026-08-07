@@ -6,8 +6,11 @@ import type { Coordinate } from '@/shared/game/Coordinate'
 // settings, not per-marker; see domain/settings/MarkerSettings.
 export interface Marker {
   color: string
-  // The folder this marker belongs to (a MarkerGroup id), or null/absent when it sits
-  // outside any folder. Optional so a marker literal without folders stays valid.
+  // Legacy: the one folder a marker used to name. Folders now hold their own ordered
+  // marker ids (a marker can be on several lines), so nothing reads this to decide
+  // membership — see domain/group/LegacyGroupLink for the two places it still matters:
+  // reading a board written before folders held sequences, and writing one an older
+  // build of the mod can still open.
   groupId?: null | string
   icon: string
   id: string

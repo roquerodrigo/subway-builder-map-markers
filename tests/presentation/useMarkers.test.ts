@@ -89,7 +89,7 @@ describe('useMarkers', () => {
     const store = createStoreDouble([createMarker('a', 'Central')])
     const { result } = renderHook(() => useMarkers(store as unknown as MarkerStore))
     expect(result.current.groups).toEqual([])
-    act(() => store.setGroups([{ collapsed: false, color: null, hidden: false, id: 'g1', name: 'Line 1' }]))
+    act(() => store.setGroups([{ collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Line 1' }]))
     expect(result.current.groups.map((group) => group.name)).toEqual(['Line 1'])
   })
 

@@ -212,8 +212,9 @@ function sanitize(value: unknown): Marker | null {
 }
 
 // Accept only well-formed folders; heal each field so a hand-edited payload can't break
-// the panel. A folder with no usable id is dropped rather than given a random one (its
-// markers would point at the old id, so a fresh id would just orphan them).
+// the panel. A folder with no usable id is dropped rather than given a random one (a
+// board written by an older build still points at the old id, so a fresh id would just
+// orphan its markers).
 function sanitizeGroup(value: unknown): MarkerGroup | null {
   if (typeof value !== 'object' || value === null) {
     return null
@@ -228,6 +229,11 @@ function sanitizeGroup(value: unknown): MarkerGroup | null {
     color: typeof candidate.color === 'string' ? candidate.color : null,
     hidden: typeof candidate.hidden === 'boolean' ? candidate.hidden : false,
     id: candidate.id,
+    // Absent in a folder written before folders held their own sequence; the store
+    // fills it in from the markers that named the folder (see LegacyGroupLink).
+    markerIds: Array.isArray(candidate.markerIds) ?
+        candidate.markerIds.filter((id): id is string => typeof id === 'string') :
+        [],
     name: typeof candidate.name === 'string' ? candidate.name : '',
   }
 }

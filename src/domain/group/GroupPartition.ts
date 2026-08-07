@@ -11,24 +11,35 @@ export interface GroupSection {
   markers: Marker[]
 }
 
-// Split markers into their folders, keeping folder order and, within each folder,
-// marker order. A marker with no group — or one whose groupId matches no folder (a
-// dangling reference left after a folder was removed) — falls into `ungrouped`, so the
-// board never loses a marker just because its folder went away.
-export function partitionByGroup(markers: Marker[], groups: MarkerGroup[]): GroupedMarkers {
-  const buckets = new Map<string, Marker[]>(groups.map((group) => [group.id, []]))
-  const ungrouped: Marker[] = []
-  for (const marker of markers) {
-    const bucket = marker.groupId == null ? undefined : buckets.get(marker.groupId)
-    if (bucket) {
-      bucket.push(marker)
-    } else {
-      ungrouped.push(marker)
-    }
-  }
+// The folders holding a marker, in board order. What the card shows: every line that
+// stops there.
+export function groupsHolding(markerId: string, groups: MarkerGroup[]): MarkerGroup[] {
+  return groups.filter((group) => group.markerIds.includes(markerId))
+}
 
-  return {
-    sections: groups.map((group) => ({ group, markers: buckets.get(group.id) ?? [] })),
-    ungrouped,
-  }
+// Resolve each folder's marker ids into markers, keeping folder order and, within each
+// folder, the order the folder itself holds — that sequence is the line, so it belongs
+// to the folder rather than to the board.
+//
+// A marker can appear in several folders (an interchange is on every line that stops
+// there), so `ungrouped` is only the markers no folder claims, and an id claimed by a
+// folder that matches no marker is skipped: a removed marker can't leave a hole in
+// someone's line.
+export function partitionByGroup(markers: Marker[], groups: MarkerGroup[]): GroupedMarkers {
+  const byId = new Map(markers.map((marker) => [marker.id, marker]))
+  const claimed = new Set<string>()
+  const sections = groups.map((group) => {
+    const held: Marker[] = []
+    for (const id of group.markerIds) {
+      const marker = byId.get(id)
+      if (marker) {
+        held.push(marker)
+        claimed.add(id)
+      }
+    }
+
+    return { group, markers: held }
+  })
+
+  return { sections, ungrouped: markers.filter((marker) => !claimed.has(marker.id)) }
 }

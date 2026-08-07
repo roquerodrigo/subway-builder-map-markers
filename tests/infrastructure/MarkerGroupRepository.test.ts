@@ -31,7 +31,7 @@ function createMemoryStorage(): MemoryStorage {
 }
 
 function group(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
+  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1', ...overrides }
 }
 
 afterEach(() => {
@@ -113,7 +113,7 @@ describe('MarkerRepository folders', () => {
     })
     const repository = new MarkerRepository(storage)
     expect(await repository.loadGroupsForSave('save-a')).toEqual([
-      { collapsed: false, color: null, hidden: false, id: 'g1', name: '' },
+      { collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: '' },
     ])
   })
 

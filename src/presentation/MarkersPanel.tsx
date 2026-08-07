@@ -6,7 +6,7 @@ import type { MarkerCardDrag } from '@/presentation/components/MarkerCard'
 import type { PanelTab } from '@/presentation/components/TabBar'
 import type { PanelDependencies } from '@/presentation/PanelDependencies'
 
-import { partitionByGroup } from '@/domain/group/GroupPartition'
+import { groupsHolding, partitionByGroup } from '@/domain/group/GroupPartition'
 import { ensurePanelOnScreen } from '@/infrastructure/ui/PanelViewport'
 import { Fragment, h, React } from '@/infrastructure/ui/react'
 import { GroupSection } from '@/presentation/components/GroupSection'
@@ -74,40 +74,51 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
       setConfirmClear(false)
     }
 
-    // Dropping a marker on a card puts it there and hands it that card's folder;
-    // dropping it on a folder appends it; dropping it on the ungrouped list takes it
-    // out of every folder. A folder dropped on a folder reorders them.
-    const cardDrag = (markerId: string): MarkerCardDrag => ({
-      dragging: drag.dragged?.kind === 'marker' && drag.dragged.id === markerId,
-      hint: drag.dragged?.kind === 'marker' && drag.hint?.id === markerId ? drag.hint.side : null,
-      onDragEnd: drag.end,
-      onDragLeave: () => drag.leave(markerId),
-      onDragOver: (event) => {
-        if (drag.dragged?.kind !== 'marker' || drag.dragged.id === markerId) {
-          return
-        }
-        // The card sits inside its folder, which is a drop target of its own: without
-        // this the folder would light up as if the marker were about to join it at the
-        // end, while the card is offering a place in the middle.
-        event.stopPropagation()
-        event.preventDefault()
-        drag.hover(markerId, dropSideOf(event))
-      },
-      onDragStart: (event) => drag.begin({ id: markerId, kind: 'marker' }, event),
-      onDrop: (event) => {
-        const dragged = drag.dragged
-        drag.end()
-        if (dragged?.kind !== 'marker') {
-          return
-        }
-        event.stopPropagation()
-        event.preventDefault()
-        store.moveMarker(dragged.id, markerId, dropSideOf(event))
-      },
-    })
+    // Dropping a marker on a card puts it in that card's folder, at that place; dropping
+    // it on a folder appends it; dropping it on the ungrouped list takes it off the
+    // folder it was dragged out of. A drag moves — the card's own folder chips are what
+    // put one marker on a second line. A folder dropped on a folder reorders them.
+    //
+    // A marker on two lines has a card in each folder, so every drop target is keyed by
+    // folder *and* marker: without that, hovering one copy would light up the other.
+    const cardDrag = (markerId: string, from: null | string): MarkerCardDrag => {
+      const key = `${from ?? ''}:${markerId}`
+
+      return {
+        dragging: drag.dragged?.kind === 'marker' && drag.dragged.id === markerId && (drag.dragged.from ?? null) === from,
+        hint: drag.dragged?.kind === 'marker' && drag.hint?.id === key ? drag.hint.side : null,
+        onDragEnd: drag.end,
+        onDragLeave: () => drag.leave(key),
+        onDragOver: (event) => {
+          if (drag.dragged?.kind !== 'marker' || drag.dragged.id === markerId) {
+            return
+          }
+          // The card sits inside its folder, which is a drop target of its own: without
+          // this the folder would light up as if the marker were about to join it at the
+          // end, while the card is offering a place in the middle.
+          event.stopPropagation()
+          event.preventDefault()
+          drag.hover(key, dropSideOf(event))
+        },
+        onDragStart: (event) => drag.begin({ from, id: markerId, kind: 'marker' }, event),
+        onDrop: (event) => {
+          const dragged = drag.dragged
+          drag.end()
+          if (dragged?.kind !== 'marker') {
+            return
+          }
+          event.stopPropagation()
+          event.preventDefault()
+          store.moveMarker(
+            { from: dragged.from ?? null, markerId: dragged.id, to: from },
+            { id: markerId, side: dropSideOf(event) },
+          )
+        },
+      }
+    }
 
     const groupDrag = (groupId: string): GroupSectionDrag => ({
-      cardDrag,
+      cardDrag: (markerId) => cardDrag(markerId, groupId),
       dragging: drag.dragged?.kind === 'group' && drag.dragged.id === groupId,
       hint: drag.dragged?.kind === 'group' && drag.hint?.id === groupId ? drag.hint.side : null,
       markerHovering: drag.dragged?.kind === 'marker' && drag.hint?.id === groupId,
@@ -130,7 +141,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
         if (dragged.kind === 'group') {
           store.moveGroup(dragged.id, groupId, dropSideOf(event))
         } else {
-          store.moveMarkerToGroup(dragged.id, groupId)
+          store.moveMarker({ from: dragged.from ?? null, markerId: dragged.id, to: groupId })
         }
       },
       onLeave: () => drag.leave(groupId),
@@ -152,19 +163,21 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
           return
         }
         event.preventDefault()
-        store.moveMarkerToGroup(dragged.id, null)
+        store.moveMarker({ from: dragged.from ?? null, markerId: dragged.id, to: null })
       },
     }
 
     const markerCard = (marker: Marker, withFolders: boolean): JSX.Element => (
       <MarkerCard
-        drag={cardDrag(marker.id)}
+        drag={cardDrag(marker.id, null)}
         groups={withFolders ? groups : undefined}
         key={marker.id}
         marker={marker}
-        onAssign={withFolders ? (groupId) => store.assignToGroup(marker.id, groupId) : undefined}
+        memberships={withFolders ? groupsHolding(marker.id, groups) : undefined}
+        onAddToGroup={(groupId) => store.addToGroup(marker.id, groupId)}
         onFocus={() => controller.focus(marker.id)}
         onRemove={() => store.remove(marker.id)}
+        onRemoveFromGroup={(groupId) => store.removeFromGroup(marker.id, groupId)}
         onSelect={() => store.select(marker.id)}
         onUpdate={(patch) => store.update(marker.id, patch)}
         selected={marker.id === selectedId}
@@ -216,10 +229,12 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
               groups={groups}
               key={section.group.id}
               markers={section.markers}
-              onAssign={(markerId, groupId) => store.assignToGroup(markerId, groupId)}
+              memberships={(markerId) => groupsHolding(markerId, groups)}
+              onAddToGroup={(markerId, groupId) => store.addToGroup(markerId, groupId)}
               onDelete={() => store.removeGroup(section.group.id)}
               onFocus={(id) => controller.focus(id)}
               onRemove={(id) => store.remove(id)}
+              onRemoveFromGroup={(markerId, groupId) => store.removeFromGroup(markerId, groupId)}
               onRename={(name) => store.renameGroup(section.group.id, name)}
               onSelect={(id) => store.select(id)}
               onSortAlongPath={() => store.sortGroupAlongPath(section.group.id)}

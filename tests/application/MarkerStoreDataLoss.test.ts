@@ -27,7 +27,7 @@ function makeStore(state: SessionState): MarkerStore {
 }
 
 function storedGroup(name: string): MarkerGroup {
-  return { collapsed: false, color: null, hidden: false, id: `group-${name}`, name }
+  return { collapsed: false, color: null, hidden: false, id: `group-${name}`, markerIds: [], name }
 }
 
 function storedMarker(label: string): Marker {
