@@ -29,8 +29,9 @@ markers around with it open. Two tabs: **Markers** and **Settings**.
 
 ### Markers
 
-**Add one** — click **Add marker**, then click anywhere on the map to drop it. It's
-selected automatically.
+**Add one** — click **Add marker**, then click anywhere on the map to drop it (the
+pointer carries a marker pin while it's armed). It's selected automatically. Drop it
+**on a folder's line** and it joins that folder, at the point of the line it landed on.
 
 **Edit one** — every marker gets a card with its **name**, a row of **color**
 swatches and a row of **icons** (station, bus, interchange, point, highlight, flag,
@@ -54,6 +55,12 @@ is for.
 them. The card lists the folders it is on, with a picker to add another and an **✕** on
 each to take it off that one; every line it is on runs through it. Dragging a card
 between folders **moves** it instead.
+
+You can also do it on the map: **drag a folder's line onto a marker** and that marker
+joins the folder. Let go anywhere else and the line snaps back, unchanged.
+
+However a marker joins a folder, it lands where it lengthens that line least — a stop
+between the two it belongs between, not tacked onto the end.
 
 **Sort a folder** — the path button in a folder's header reorders its markers along the
 shortest path through them. Marker order is the order the folder's line is drawn in, so

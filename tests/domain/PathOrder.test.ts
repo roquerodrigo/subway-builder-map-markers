@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Coordinate } from '@/shared/game/Coordinate'
 
 import { planarDistance } from '@/domain/geo/LocalPlane'
-import { orderAlongPath } from '@/domain/route/PathOrder'
+import { insertionIndexFor, orderAlongPath } from '@/domain/route/PathOrder'
 
 interface Stop {
   name: string
@@ -153,5 +153,38 @@ describe('orderAlongPath', () => {
       expect(performance.now() - started).toBeLessThan(3000)
       expect(pathLength(ordered)).toBeCloseTo(pathLength(line), 6)
     })
+  })
+})
+
+describe('insertionIndexFor', () => {
+  const line: Coordinate[] = [[0, 0], [1, 0], [2, 0], [3, 0]]
+
+  // A station added to a line is a stop between two others: putting it at the end
+  // would double the line back across the city.
+  it('puts a stop in the gap it belongs to', () => {
+    expect(insertionIndexFor(line, [1.5, 0.01])).toBe(2)
+  })
+
+  it('extends the line past a terminus when that is the nearest place', () => {
+    expect(insertionIndexFor(line, [4, 0])).toBe(4)
+    expect(insertionIndexFor(line, [-1, 0])).toBe(0)
+  })
+
+  it('takes the gap it sits beside, not the stop it sits nearest', () => {
+    // Nearer to [3, 0] than to [1, 0], but the detour through the last gap is smaller
+    // than doubling back from the terminus.
+    expect(insertionIndexFor(line, [2.6, 0.4])).toBe(3)
+  })
+
+  it('has one answer for a line with nothing to insert between', () => {
+    expect(insertionIndexFor([], [0, 0])).toBe(0)
+    expect(insertionIndexFor([[0, 0]], [1, 1])).toBe(1)
+  })
+
+  // Raw degrees would read the eastward gap as the wider one at this latitude, and
+  // drop the stop into the wrong place.
+  it('measures the detour on the ground, not in raw degrees', () => {
+    const northern: Coordinate[] = [[0, 60], [2, 60], [2, 60.6]]
+    expect(insertionIndexFor(northern, [1, 60])).toBe(1)
   })
 })

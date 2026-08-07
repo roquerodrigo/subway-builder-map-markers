@@ -150,10 +150,13 @@ describe('MapMarkersController', () => {
       expect(map.listenerCount('click')).toBe(1)
     })
 
-    it('hints the mode with a crosshair over the map', () => {
+    // The pointer carries the marker pin while armed, so the mode reads at the cursor
+    // and not only in the panel. The crosshair stays as the fallback.
+    it('hints the mode with a marker cursor over the map', () => {
       controller.start()
       controller.togglePlacement()
-      expect(map.canvasContainer.style.cursor).toBe('crosshair')
+      expect(map.canvasContainer.style.cursor).toContain('image/svg+xml')
+      expect(map.canvasContainer.style.cursor).toContain('crosshair')
     })
 
     it('adds a marker where the map was clicked and selects it', () => {
@@ -482,6 +485,49 @@ describe('MapMarkersController', () => {
 
   // Zoomed out, a fixed-size badge per station piles into an unreadable clump; the
   // folder lines are what an overview needs, and they stay.
+  // Dropping a marker on a line the player can see is how they say "this is a stop on
+  // that line" — no trip to the panel needed.
+  describe('placing a marker on a line', () => {
+    it('puts it on the folder whose line it landed on', () => {
+      const group = fillFolder('Line 1', [[0, 0], [1, 0]])
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0.5 } })
+      const placed = store.all()[2]
+      expect(store.groups()[0].markerIds).toContain(placed.id)
+      // Between the two stops it was dropped between, not tacked onto the end.
+      expect(store.groups()[0].markerIds.indexOf(placed.id)).toBe(1)
+      expect(group.id).toBe(store.groups()[0].id)
+    })
+
+    it('leaves a marker dropped away from every line unattached', () => {
+      fillFolder('Line 1', [[0, 0], [1, 0]])
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 5, lng: 0.5 } })
+      expect(store.groups()[0].markerIds).toHaveLength(2)
+    })
+
+    it('leaves it unattached while the lines are turned off', () => {
+      build({ settings: { showRouteLines: false } })
+      fillFolder('Line 1', [[0, 0], [1, 0]])
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0.5 } })
+      expect(store.groups()[0].markerIds).toHaveLength(2)
+    })
+
+    // A hidden folder isn't on the map, so a marker can't land on its line.
+    it('ignores the line of a hidden folder', () => {
+      const group = fillFolder('Line 1', [[0, 0], [1, 0]])
+      store.setGroupHidden(group.id, true)
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0.5 } })
+      expect(store.groups()[0].markerIds).toHaveLength(2)
+    })
+  })
+
   describe('zooming out', () => {
     it('draws the badges at street zoom', () => {
       store.add([1, 2])

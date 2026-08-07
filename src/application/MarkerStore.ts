@@ -9,7 +9,7 @@ import { withLegacyGroupIds, withSequencesFromLegacy } from '@/domain/group/Lega
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 import { createMarker } from '@/domain/marker/MarkerFactory'
 import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
-import { orderAlongPath } from '@/domain/route/PathOrder'
+import { insertionIndexFor, orderAlongPath } from '@/domain/route/PathOrder'
 
 // A marker dropped by the panel: which list it was dragged out of and which one it was
 // dropped into (null being the ungrouped list). Dragging moves; the card's folder chips
@@ -98,16 +98,25 @@ export class MarkerStore {
     return group
   }
 
-  // Put a marker on a folder's line, at the end of it, without taking it off any other:
-  // an interchange is on every line that stops there. A marker or folder that isn't
-  // there, or a marker the folder already holds, is a no-op.
+  // Put a marker on a folder's line without taking it off any other: an interchange is
+  // on every line that stops there. It lands where it lengthens the line least — a
+  // station joins a line between two of its stops, and appending it to the end would
+  // double the line back across the city. A marker or folder that isn't there, or a
+  // marker the folder already holds, is a no-op.
   addToGroup(markerId: string, groupId: string): void {
-    if (!this.markers.some((marker) => marker.id === markerId)) {
+    const added = this.markers.find((marker) => marker.id === markerId)
+    if (!added) {
       return
     }
-    this.updateGroup(groupId, (group) => (
-      group.markerIds.includes(markerId) ? group : { ...group, markerIds: [...group.markerIds, markerId] }
-    ))
+    this.updateGroup(groupId, (group) => {
+      if (group.markerIds.includes(markerId)) {
+        return group
+      }
+      const line = this.positionsOf(group.markerIds)
+      const at = insertionIndexFor(line, added.position)
+
+      return { ...group, markerIds: [...group.markerIds.slice(0, at), markerId, ...group.markerIds.slice(at)] }
+    })
   }
 
   all(): Marker[] {
@@ -517,6 +526,12 @@ export class MarkerStore {
       clearTimeout(this.persistTimer)
     }
     this.persistTimer = setTimeout(() => void this.flushPersist(), PERSIST_DEBOUNCE_MS)
+  }
+
+  private positionsOf(markerIds: string[]): Coordinate[] {
+    const byId = new Map(this.markers.map((marker) => [marker.id, marker.position]))
+
+    return markerIds.map((id) => byId.get(id)).filter((position) => position !== undefined)
   }
 
   // The ungrouped list has no sequence of its own: it is whatever no folder claims, in

@@ -14,6 +14,38 @@ interface Positioned {
   position: Coordinate
 }
 
+// Where a new stop belongs on a line that is already in order: the place that
+// lengthens it least. A station added to a line is a stop between two others, not an
+// extension past its terminus, and appending it there would double the line back on
+// itself — so this is what "add to folder" uses instead of the end of the list.
+//
+// Cheapest insertion, one pass: every gap costs the detour through the new point minus
+// the leg it replaces, and the two ends cost the leg out to it.
+export function insertionIndexFor(line: Coordinate[], point: Coordinate): number {
+  if (line.length < 2) {
+    return line.length
+  }
+  const plane = localPlaneFor([...line, point])
+  const stops = line.map(plane.project)
+  const stop = plane.project(point)
+
+  let best = 0
+  let bestCost = Infinity
+  for (let index = 0; index <= stops.length; index++) {
+    const before = index > 0 ? stops[index - 1] : null
+    const after = index < stops.length ? stops[index] : null
+    const cost = before && after ?
+      planarDistance(before, stop) + planarDistance(stop, after) - planarDistance(before, after) :
+        planarDistance(stop, (before ?? after) as Coordinate)
+    if (cost < bestCost) {
+      best = index
+      bestCost = cost
+    }
+  }
+
+  return best
+}
+
 // Put markers in the order a line would visit them: the shortest open path through all
 // of them. That's what turns a folder into a route — a board imported (or typed) in
 // alphabetical order draws a line that criss-crosses the city, because the drawn line

@@ -47,7 +47,7 @@ describe('MarkerStore folders', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
-  it('puts a marker on a folder s line, at the end of it', () => {
+  it('puts a marker on a folder s line', () => {
     const { store } = createFixture()
     const group = store.addGroup('Line 1')
     const first = store.add([0, 0])
@@ -55,6 +55,36 @@ describe('MarkerStore folders', () => {
     store.addToGroup(first.id, group.id)
     store.addToGroup(second.id, group.id)
     expect(store.groups()[0].markerIds).toEqual([first.id, second.id])
+  })
+
+  // A station joins a line between two of its stops; appending it to the end would
+  // double the line back across the city.
+  it('lands a new stop in the gap it belongs to, not at the end', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const ends = [store.add([0, 0]), store.add([1, 0]), store.add([2, 0])]
+    for (const marker of ends) {
+      store.addToGroup(marker.id, group.id)
+    }
+    const between = store.add([0.5, 0])
+
+    store.addToGroup(between.id, group.id)
+
+    expect(store.groups()[0].markerIds).toEqual([ends[0].id, between.id, ends[1].id, ends[2].id])
+  })
+
+  it('extends the line past its terminus when the new stop is out there', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const ends = [store.add([0, 0]), store.add([1, 0])]
+    for (const marker of ends) {
+      store.addToGroup(marker.id, group.id)
+    }
+    const beyond = store.add([2, 0])
+
+    store.addToGroup(beyond.id, group.id)
+
+    expect(store.groups()[0].markerIds).toEqual([ends[0].id, ends[1].id, beyond.id])
   })
 
   // An interchange is on every line that stops there.
@@ -278,12 +308,23 @@ describe('MarkerStore folders', () => {
   describe('sortGroupAlongPath', () => {
     // A folder's marker order is the order the line is drawn in, so a folder filled in
     // some other order (alphabetically, say) draws a line that criss-crosses the city.
+    // Fill a folder and then drag its markers into exactly `positions` order — which is
+    // the mess this action exists to clean up (a board typed in alphabetical order).
+    // Adding to a folder already picks the right place, so the disorder has to be made
+    // on purpose.
     function fillFolder(store: MarkerStore, positions: [number, number][]): string {
       const group = store.addGroup('Line 1')
-      positions.forEach((position, index) => {
+      const ids = positions.map((position, index) => {
         const marker = store.add(position)
         store.update(marker.id, { label: `stop-${index}` })
         store.addToGroup(marker.id, group.id)
+
+        return marker.id
+      })
+      ids.forEach((id, index) => {
+        if (index > 0) {
+          store.moveMarker({ from: group.id, markerId: id, to: group.id }, { id: ids[index - 1], side: 'after' })
+        }
       })
 
       return group.id
