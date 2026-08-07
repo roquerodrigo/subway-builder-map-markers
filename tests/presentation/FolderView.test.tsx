@@ -25,6 +25,7 @@ function renderSection(overrides: {
     onBack: vi.fn(),
     onDelete: vi.fn(),
     onFocus: vi.fn(),
+    onOpenGroup: vi.fn(),
     onRecolor: vi.fn(),
     onRemove: vi.fn(),
     onRemoveFromGroup: vi.fn(),
@@ -45,6 +46,7 @@ function renderSection(overrides: {
       onBack={handlers.onBack}
       onDelete={handlers.onDelete}
       onFocus={handlers.onFocus}
+      onOpenGroup={handlers.onOpenGroup}
       onRecolor={handlers.onRecolor}
       onRemove={handlers.onRemove}
       onRemoveFromGroup={handlers.onRemoveFromGroup}

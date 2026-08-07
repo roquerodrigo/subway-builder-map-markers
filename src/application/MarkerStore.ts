@@ -10,6 +10,7 @@ import { withLegacyGroupIds, withSequencesFromLegacy } from '@/domain/group/Lega
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 import { iconForMembership } from '@/domain/marker/InterchangeIcon'
 import { createMarker } from '@/domain/marker/MarkerFactory'
+import { colorForMembership } from '@/domain/marker/MembershipColor'
 import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
 import { insertionIndexFor, orderAlongPath } from '@/domain/route/PathOrder'
 
@@ -73,6 +74,8 @@ export class MarkerStore {
   private markers: Marker[] = []
   private pendingWrite: null | PendingWrite = null
   private persistTimer: null | ReturnType<typeof setTimeout> = null
+  // Colors a folder has just given up, held until the next reconciliation reads them.
+  private retiredColors = new Set<string>()
   private saveId: null | string = null
   private selectedId: null | string = null
 
@@ -185,8 +188,14 @@ export class MarkerStore {
     this.commit()
   }
 
-  // Set the folder's color: its line takes it, and so does every marker created in it.
+  // Set the folder's color: its line takes it, and so do the markers on it. The color
+  // it had is remembered for exactly one reconciliation, so a marker still wearing it
+  // is recognised as having taken it from the folder rather than from the player.
   recolorGroup(id: string, color: null | string): void {
+    const previous = this.groupList.find((group) => group.id === id)?.color
+    if (previous != null && previous !== color) {
+      this.retiredColors.add(previous)
+    }
     this.updateGroup(id, (group) => (group.color === color ? group : { ...group, color }))
   }
 
@@ -375,10 +384,10 @@ export class MarkerStore {
     this.markers = loaded.markers
     this.groupList = loaded.groups
     this.selectedId = null
-    // A board written before the icon followed the folders can arrive with an
+    // A board written before a marker's look followed its folders can arrive with an
     // interchange that stops on one line, or a stop where two lines meet. Settle it on
     // load rather than at the player's next edit, which would look like a glitch.
-    this.syncInterchangeIcons()
+    this.syncDerivedLooks()
     this.notify()
     if (loaded.markers.length > 0 || loaded.groups.length > 0) {
       this.persist() // seed this save's buckets + the city cache
@@ -426,7 +435,7 @@ export class MarkerStore {
   }
 
   private commit(): void {
-    this.syncInterchangeIcons()
+    this.syncDerivedLooks()
     this.notify()
     this.persist()
   }
@@ -528,25 +537,33 @@ export class MarkerStore {
     this.commit()
   }
 
-  // A marker on two lines is an interchange and should look like one; back on one line
-  // it is a stop again. Only those two icons are traded for each other, so an icon the
-  // player picked is left alone.
-  private syncInterchangeIcons(): void {
-    const folders = new Map<string, number>()
+  // How a marker looks follows the lines it is on: a stop takes its folder's color and
+  // the station icon, an interchange goes black and takes the interchange icon. Only
+  // what the mod assigns is traded back and forth — an icon or a color the player
+  // picked is a choice, and choices are kept.
+  private syncDerivedLooks(): void {
+    const folders = new Map<string, (null | string)[]>()
     for (const group of this.groupList) {
       for (const markerId of group.markerIds) {
-        folders.set(markerId, (folders.get(markerId) ?? 0) + 1)
+        folders.set(markerId, [...folders.get(markerId) ?? [], group.color])
       }
     }
+    const derivedColors = new Set([
+      ...this.groupList.map((group) => group.color).filter((color) => color !== null),
+      ...this.retiredColors,
+    ])
+    this.retiredColors.clear()
     let changed = false
     const next = this.markers.map((marker) => {
-      const icon = iconForMembership(marker.icon, folders.get(marker.id) ?? 0)
-      if (icon === marker.icon) {
+      const holders = folders.get(marker.id) ?? []
+      const icon = iconForMembership(marker.icon, holders.length)
+      const color = colorForMembership(marker.color, holders, derivedColors)
+      if (icon === marker.icon && color === marker.color) {
         return marker
       }
       changed = true
 
-      return { ...marker, icon }
+      return { ...marker, color, icon }
     })
     if (changed) {
       this.markers = next
