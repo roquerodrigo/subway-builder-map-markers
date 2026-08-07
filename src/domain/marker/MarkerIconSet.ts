@@ -99,6 +99,11 @@ export const MARKER_ICONS: MarkerIcon[] = [
 
 const ICON_BY_KEY = new Map(MARKER_ICONS.map((icon) => [icon.key, icon]))
 
+// The two icons the mod keeps in step with a marker's folders (see InterchangeIcon):
+// a stop on one line, an interchange on two or more.
+export const STATION_ICON = 'station'
+export const INTERCHANGE_ICON = 'interchange'
+
 export const DEFAULT_MARKER_ICON = MARKER_ICONS[0].key
 
 export function markerIcon(key: string): MarkerIcon {

@@ -1,5 +1,6 @@
 import { MarkerStore } from '@/application/MarkerStore'
 import { SettingsStore } from '@/application/SettingsStore'
+import { RoadNamer } from '@/infrastructure/game/RoadNamer'
 import { StationNamer } from '@/infrastructure/game/StationNamer'
 import { MapMarkersController } from '@/infrastructure/map/MapMarkersController'
 import { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
@@ -30,7 +31,7 @@ function bootstrap(): void {
   const repository = new MarkerRepository(createModStorage())
   const store = new MarkerStore(repository, session)
   const settings = new SettingsStore(new SettingsRepository())
-  const controller = new MapMarkersController(api, store, settings)
+  const controller = new MapMarkersController(api, store, settings, new RoadNamer(storeCallbacks))
   const stationNamer = new StationNamer(storeCallbacks, store, settings)
 
   // Pre-clamp any stale saved window position so the panel opens on-screen (and the

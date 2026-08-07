@@ -1,7 +1,7 @@
 import type { DragEvent } from 'react'
 
 import type { Marker } from '@/domain/marker/Marker'
-import type { GroupSectionDrag } from '@/presentation/components/GroupSection'
+import type { GroupRowDrag } from '@/presentation/components/GroupRow'
 import type { MarkerCardDrag } from '@/presentation/components/MarkerCard'
 import type { PanelTab } from '@/presentation/components/TabBar'
 import type { PanelDependencies } from '@/presentation/PanelDependencies'
@@ -9,7 +9,8 @@ import type { PanelDependencies } from '@/presentation/PanelDependencies'
 import { groupsHolding, partitionByGroup } from '@/domain/group/GroupPartition'
 import { ensurePanelOnScreen } from '@/infrastructure/ui/PanelViewport'
 import { Fragment, h, React } from '@/infrastructure/ui/react'
-import { GroupSection } from '@/presentation/components/GroupSection'
+import { FolderView } from '@/presentation/components/FolderView'
+import { GroupRow } from '@/presentation/components/GroupRow'
 import { MarkerCard } from '@/presentation/components/MarkerCard'
 import { TabBar } from '@/presentation/components/TabBar'
 import { dropSideOf, useBoardOrdering } from '@/presentation/hooks/useBoardOrdering'
@@ -34,6 +35,9 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
     const placing = usePlacement(controller)
     const drag = useBoardOrdering()
     const [tab, setTab] = React.useState<PanelTab>('markers')
+    // Which folder the panel is showing, if any. A folder is a line with dozens of
+    // stops, so opening one replaces the list instead of unfolding inside it.
+    const [openFolderId, setOpenFolderId] = React.useState<null | string>(null)
     const [confirmClear, setConfirmClear] = React.useState(false)
     const rootRef = React.useRef<HTMLDivElement>(null)
 
@@ -56,6 +60,26 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
         store.select(null)
       }
     }, [])
+
+    const openFolder = groups.find((group) => group.id === openFolderId) ?? null
+    React.useEffect(() => {
+      // A marker placed while a folder is open belongs to it — the map side needs to
+      // know, since that is where placement lands.
+      controller.setOpenFolder(openFolder?.id ?? null)
+    }, [openFolder?.id])
+
+    // Selection often starts on the map (clicking a badge). Follow it into whichever
+    // folder holds that marker, so the card it scrolls to is actually on screen. Keyed
+    // on the selection alone: re-running it whenever the folders change would drag the
+    // panel back to the selected marker while the player is somewhere else.
+    React.useEffect(() => {
+      if (!selectedId) {
+        return
+      }
+      const holder = groups.find((group) => group.markerIds.includes(selectedId))
+      setOpenFolderId(holder?.id ?? null)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedId])
 
     const switchTab = (next: PanelTab): void => {
       if (next !== 'markers') {
@@ -117,8 +141,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
       }
     }
 
-    const groupDrag = (groupId: string): GroupSectionDrag => ({
-      cardDrag: (markerId) => cardDrag(markerId, groupId),
+    const groupDrag = (groupId: string): GroupRowDrag => ({
       dragging: drag.dragged?.kind === 'group' && drag.dragged.id === groupId,
       hint: drag.dragged?.kind === 'group' && drag.hint?.id === groupId ? drag.hint.side : null,
       markerHovering: drag.dragged?.kind === 'marker' && drag.hint?.id === groupId,
@@ -185,7 +208,37 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
     )
 
     const renderList = (): JSX.Element => {
-      if (markers.length === 0) {
+      if (openFolder) {
+        const held = partitionByGroup(markers, groups).sections
+          .find((section) => section.group.id === openFolder.id)
+
+        return (
+          <FolderView
+            cardDrag={(markerId) => cardDrag(markerId, openFolder.id)}
+            group={openFolder}
+            groups={groups}
+            markers={held?.markers ?? []}
+            memberships={(markerId) => groupsHolding(markerId, groups)}
+            onAddToGroup={(markerId, groupId) => store.addToGroup(markerId, groupId)}
+            onBack={() => setOpenFolderId(null)}
+            onDelete={() => {
+              store.removeGroup(openFolder.id)
+              setOpenFolderId(null)
+            }}
+            onFocus={(id) => controller.focus(id)}
+            onRecolor={(color) => store.recolorGroup(openFolder.id, color)}
+            onRemove={(id) => store.remove(id)}
+            onRemoveFromGroup={(markerId, groupId) => store.removeFromGroup(markerId, groupId)}
+            onRename={(name) => store.renameGroup(openFolder.id, name)}
+            onSelect={(id) => store.select(id)}
+            onSortAlongPath={() => store.sortGroupAlongPath(openFolder.id)}
+            onToggleHidden={() => store.toggleGroupHidden(openFolder.id)}
+            onUpdate={(id, patch) => store.update(id, patch)}
+            selectedId={selectedId}
+          />
+        )
+      }
+      if (markers.length === 0 && groups.length === 0) {
         return (
           <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-muted-foreground">
             <div className="text-sm font-medium">No markers yet</div>
@@ -205,6 +258,18 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
 
       return (
         <>
+          {sections.map((section) => (
+            <GroupRow
+              count={section.markers.length}
+              drag={groupDrag(section.group.id)}
+              group={section.group}
+              key={section.group.id}
+              onDelete={() => store.removeGroup(section.group.id)}
+              onOpen={() => setOpenFolderId(section.group.id)}
+              onRename={(name) => store.renameGroup(section.group.id, name)}
+              onToggleHidden={() => store.toggleGroupHidden(section.group.id)}
+            />
+          ))}
           {showUngrouped ?
               (
                 <div
@@ -221,29 +286,6 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
                 </div>
               ) :
             null}
-          {sections.map((section) => (
-            <GroupSection
-              collapsed={section.group.collapsed}
-              drag={groupDrag(section.group.id)}
-              group={section.group}
-              groups={groups}
-              key={section.group.id}
-              markers={section.markers}
-              memberships={(markerId) => groupsHolding(markerId, groups)}
-              onAddToGroup={(markerId, groupId) => store.addToGroup(markerId, groupId)}
-              onDelete={() => store.removeGroup(section.group.id)}
-              onFocus={(id) => controller.focus(id)}
-              onRemove={(id) => store.remove(id)}
-              onRemoveFromGroup={(markerId, groupId) => store.removeFromGroup(markerId, groupId)}
-              onRename={(name) => store.renameGroup(section.group.id, name)}
-              onSelect={(id) => store.select(id)}
-              onSortAlongPath={() => store.sortGroupAlongPath(section.group.id)}
-              onToggleCollapsed={() => store.toggleGroupCollapsed(section.group.id)}
-              onToggleHidden={() => store.toggleGroupHidden(section.group.id)}
-              onUpdate={(id, patch) => store.update(id, patch)}
-              selectedId={selectedId}
-            />
-          ))}
         </>
       )
     }

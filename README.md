@@ -30,8 +30,11 @@ markers around with it open. Two tabs: **Markers** and **Settings**.
 ### Markers
 
 **Add one** — click **Add marker**, then click anywhere on the map to drop it (the
-pointer carries a marker pin while it's armed). It's selected automatically. Drop it
-**on a folder's line** and it joins that folder, at the point of the line it landed on.
+pointer carries a marker pin while it's armed). It arrives **named after the streets
+around it**, the way the game names a station built there — the street the line crosses
+wins, as it does in the game. Drop it **on a folder's line**, or place it while a folder
+is open, and it joins that folder: at the point of the line it landed on, in the
+folder's color.
 
 **Edit one** — every marker gets a card with its **name**, a row of **color**
 swatches and a row of **icons** (station, bus, interchange, point, highlight, flag,
@@ -42,8 +45,8 @@ map alike.
 **Move one** — drag its badge on the map. The map won't pan while you drag, and the
 influence circle follows in real time.
 
-**Find one** — click its badge on the map and the panel takes you to it: the folder
-holding it unfolds, the card scrolls into view and opens on its settings. A card shows
+**Find one** — click its badge on the map and the panel takes you to it: it opens the
+folder holding it, scrolls the card into view and opens it on its settings. A card shows
 its name until then — the color, icon and folder controls are behind the **⌄** button,
 so a board of hundreds stays scrollable.
 
@@ -51,8 +54,14 @@ Zoomed far out the badges step aside (names first, then the badges themselves) s
 can't pile into an unreadable clump; the folder lines stay, which is what an overview
 is for.
 
+**Open a folder** — a folder opens into a view of its own (a line has dozens of stops,
+so unfolding it in place would bury every other folder), with a **back** button to the
+list. Its **color** is set there: the folder's line takes it on the map, and so does
+every marker created in the folder.
+
 **Put one marker on several lines** — a station where lines meet belongs to each of
-them. The card lists the folders it is on, with a picker to add another and an **✕** on
+them, and its icon becomes the interchange one as soon as it is on two (back to the
+station icon when it comes off one). Any other icon you pick is left alone. The card lists the folders it is on, with a picker to add another and an **✕** on
 each to take it off that one; every line it is on runs through it. Dragging a card
 between folders **moves** it instead.
 
