@@ -10,6 +10,9 @@ export interface MarkerSettings {
   radiusMeters: number
   showInfluence: boolean
   showLabels: boolean
+  // When on, the markers of each folder are joined by a smooth line, in panel order —
+  // a guide for where the track should run.
+  showRouteLines: boolean
   showSpacingGuide: boolean
   snapToSpacing: boolean
 }
@@ -37,6 +40,7 @@ export const DEFAULT_SETTINGS: MarkerSettings = {
   radiusMeters: DEFAULT_RADIUS_METERS,
   showInfluence: true,
   showLabels: true,
+  showRouteLines: true,
   showSpacingGuide: true,
   snapToSpacing: true,
 }
@@ -50,6 +54,7 @@ export function normalizeSettings(value: null | Partial<MarkerSettings> | undefi
     radiusMeters: coerce(value?.radiusMeters, DEFAULT_RADIUS_METERS, MIN_RADIUS_METERS, MAX_RADIUS_METERS),
     showInfluence: coerceToggle(value?.showInfluence, true),
     showLabels: coerceToggle(value?.showLabels, true),
+    showRouteLines: coerceToggle(value?.showRouteLines, true),
     showSpacingGuide: coerceToggle(value?.showSpacingGuide, true),
     snapToSpacing: coerceToggle(value?.snapToSpacing, true),
   }

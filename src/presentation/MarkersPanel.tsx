@@ -222,6 +222,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
               onRemove={(id) => store.remove(id)}
               onRename={(name) => store.renameGroup(section.group.id, name)}
               onSelect={(id) => store.select(id)}
+              onSortAlongPath={() => store.sortGroupAlongPath(section.group.id)}
               onToggleCollapsed={() => store.toggleGroupCollapsed(section.group.id)}
               onToggleHidden={() => store.toggleGroupHidden(section.group.id)}
               onUpdate={(id, patch) => store.update(id, patch)}

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
 import type { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
 import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
@@ -16,6 +17,11 @@ import { GameSession } from '@/infrastructure/store/GameSession'
 import type { FakeGlMap } from './fakeGlMap'
 
 import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
+
+interface RouteFeature {
+  geometry: { coordinates: [number, number][], type: string }
+  properties: { color: string, groupId: string }
+}
 
 function badgeRootsOf(map: FakeGlMap): HTMLElement[] {
   return Array.from(overlayOf(map).children) as HTMLElement[]
@@ -70,6 +76,21 @@ describe('MapMarkersController', () => {
     store = new MarkerStore(new MarkerRepository(createModStorage()), new GameSession(api, null))
     settings = new SettingsStore(createSettingsRepository({ ...DEFAULT_SETTINGS, ...options.settings }))
     controller = new MapMarkersController(api, store, settings)
+  }
+
+  function fillFolder(name: string, positions: [number, number][]): MarkerGroup {
+    const group = store.addGroup(name)
+    for (const position of positions) {
+      store.assignToGroup(store.add(position).id, group.id)
+    }
+
+    return group
+  }
+
+  function routeFeatures(): RouteFeature[] {
+    const data = map.sourceData('sbmm-route') as undefined | { features: RouteFeature[] }
+
+    return data?.features ?? []
   }
 
   beforeEach(() => {
@@ -429,6 +450,82 @@ describe('MapMarkersController', () => {
       controller.start()
       store.setGroupHidden(group.id, true)
       expect(badgeRootsOf(map)).toHaveLength(1)
+    })
+
+    it('takes the folder line down with it', () => {
+      const group = fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      expect(routeFeatures()).toHaveLength(1)
+      store.setGroupHidden(group.id, true)
+      expect(routeFeatures()).toHaveLength(0)
+    })
+  })
+
+  describe('drawing the folder route', () => {
+    it('joins the markers of a folder in panel order', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4], [5, 6]])
+      controller.start()
+      const drawn = routeFeatures()[0].geometry.coordinates
+      expect(drawn[0]).toEqual([1, 2])
+      expect(drawn[drawn.length - 1]).toEqual([5, 6])
+      // Curved, so it carries far more points than the three markers it passes through.
+      expect(drawn.length).toBeGreaterThan(3)
+    })
+
+    it('redraws the line as a marker is dragged', () => {
+      const group = fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      store.update(store.all()[1].id, { position: [9, 9] })
+      const drawn = routeFeatures()[0].geometry.coordinates
+      expect(drawn[drawn.length - 1]).toEqual([9, 9])
+      expect(routeFeatures()[0].properties.groupId).toBe(group.id)
+    })
+
+    it('leaves markers outside every folder unconnected', () => {
+      store.add([1, 2])
+      store.add([3, 4])
+      controller.start()
+      expect(routeFeatures()).toHaveLength(0)
+    })
+
+    it('clears the lines when the setting is turned off', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      settings.update({ showRouteLines: false })
+      expect(routeFeatures()).toHaveLength(0)
+    })
+
+    it('draws no line at all when the setting starts off', () => {
+      build({ settings: { showRouteLines: false } })
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      expect(routeFeatures()).toHaveLength(0)
+    })
+
+    it('fades with the rest of the overlay while the panel is closed', () => {
+      build({ settings: { idleOpacity: 0.4 } })
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      expect(map.layers.get('sbmm-route-line')?.paint['line-opacity']).toBeCloseTo(0.36, 10)
+      controller.setPanelOpen(true)
+      expect(map.layers.get('sbmm-route-line')?.paint['line-opacity']).toBeCloseTo(0.9, 10)
+    })
+
+    // The route is a guide for the track, so it has to read over the influence
+    // circles rather than under them.
+    it('draws the route on top of the influence circles', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      expect(map.layerOrder.indexOf('sbmm-radius-fill')).toBeLessThan(map.layerOrder.indexOf('sbmm-route-line'))
+    })
+
+    it('redraws onto the new map instance after a city load', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      const replacement = createFakeGlMap()
+      currentMap = replacement
+      controller.syncToMap()
+      expect(replacement.layers.has('sbmm-route-line')).toBe(true)
     })
   })
 })

@@ -114,6 +114,7 @@ describe('SettingsTab idle opacity', () => {
 describe('SettingsTab toggles', () => {
   const toggles: [string, keyof MarkerSettings][] = [
     ['Show influence area', 'showInfluence'],
+    ['Show line paths', 'showRouteLines'],
     ['Show spacing guides', 'showSpacingGuide'],
     ['Magnetic snap', 'snapToSpacing'],
     ['Show names', 'showLabels'],
@@ -121,7 +122,7 @@ describe('SettingsTab toggles', () => {
 
   it('renders every display toggle', () => {
     renderTab()
-    // The four always-on display toggles plus the opt-in "name stations" toggle.
+    // The always-on display toggles plus the opt-in "name stations" toggle.
     expect(screen.getAllByRole('switch')).toHaveLength(toggles.length + 1)
   })
 

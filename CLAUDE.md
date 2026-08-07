@@ -10,7 +10,14 @@ the host at runtime (never bundled). Conventions mirror the sibling mod
 
 Markers can be organized into **folders** (one per line, say), each foldable and
 hideable on its own; and, as an **opt-in** setting, a station the player builds inside
-a marker's influence area is **renamed to that marker's label**.
+a marker's influence area is **renamed to that marker's label**. A folder's markers are
+also joined by a **smooth dashed guide line** (`showRouteLines`, on by default) — a
+centripetal Catmull-Rom curve through them, in panel order, sampled into the geometry
+because a GL line layer only joins vertices with straight segments; dashed so it never
+reads as track already built. Markers outside a folder are never connected. Because
+marker order **is** the drawn line, each folder header carries a **sort along the path**
+action (nearest-neighbor from every start + 2-opt) — the way a folder filled in some
+other order becomes a route.
 
 Unlike auto-lines, this mod **never touches routes, tracks or trains**, and it edits
 **stations only** through that one opt-in naming path (off by default) — so none of the

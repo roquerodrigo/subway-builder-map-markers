@@ -6,8 +6,10 @@ import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
 import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
 import { snapToSpacing } from '@/domain/marker/SpacingSnap'
+import { markerRoutes } from '@/domain/route/MarkerRoute'
 import { InfluenceRadiusLayer } from '@/infrastructure/map/InfluenceRadiusLayer'
 import { MarkerLayer } from '@/infrastructure/map/MarkerLayer'
+import { RouteLineLayer } from '@/infrastructure/map/RouteLineLayer'
 
 type PlacementListener = (active: boolean) => void
 
@@ -25,6 +27,7 @@ export class MapMarkersController {
   private placementActive = false
   private placementListeners = new Set<PlacementListener>()
   private radiusLayer: InfluenceRadiusLayer
+  private routeLayer: RouteLineLayer
 
   constructor(
     private readonly api: SubwayBuilderApi,
@@ -42,6 +45,7 @@ export class MapMarkersController {
       snapPosition: (id, candidate) => this.snapToNeighbors(id, candidate),
     })
     this.radiusLayer = new InfluenceRadiusLayer(getMap)
+    this.routeLayer = new RouteLineLayer(getMap)
   }
 
   cancelPlacement(): void {
@@ -157,6 +161,9 @@ export class MapMarkersController {
     const markers = this.store.visibleMarkers()
     this.markerLayer.render(markers, this.store.selected(), { opacity, showLabels: settings.showLabels })
     this.radiusLayer.render(markers, settings, opacity)
+    // Drawn after the circles so the route reads on top of them, and only over the
+    // visible markers, so a hidden folder takes its line down with it.
+    this.routeLayer.render(settings.showRouteLines ? markerRoutes(markers, this.store.groups()) : [], opacity)
   }
 
   // Magnetic placement aid: pull a dragged marker onto the ideal spacing (√3·R) from

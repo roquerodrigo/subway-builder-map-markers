@@ -41,6 +41,11 @@ map alike.
 **Move one** — drag its badge on the map. The map won't pan while you drag, and the
 influence circle follows in real time.
 
+**Sort a folder** — the path button in a folder's header reorders its markers along the
+shortest path through them. Marker order is the order the folder's line is drawn in, so
+this is what turns a folder filled in some other order (alphabetically, say) into a
+route. Drag the cards afterwards to correct anything it got wrong.
+
 **Remove all** clears the current game's markers, behind a two-click confirm.
 
 ### Settings
@@ -52,6 +57,10 @@ Global display settings, applied to every marker:
 - **Opacity while the panel is closed** — fades the whole overlay while you play, so
   the markers read as a background sketch. 100% disables the fade.
 - **Show influence area** — the radius circle around each marker.
+- **Show line paths** — joins the markers of each folder, in the order the panel lists
+  them, with a smooth dashed curve: the line to follow when you lay the track. Dashed,
+  so it never reads as track you already built. Markers outside a folder stay
+  unconnected, and hiding a folder takes its line down with it.
 - **Show spacing guides** — a ring at the ideal distance (√3·R) from each marker.
   Put a neighbor on that ring and two catchments meet with the least overlap that
   still leaves no gap.
@@ -71,6 +80,12 @@ across sessions. Settings are global. Everything persists in `localStorage`.
   move — the same technique the map library's own markers use.
 - **Geodesic circles** for the influence radius (a GeoJSON polygon per marker), so
   1 km is 1 km on the ground rather than a fixed number of screen pixels.
+- **Centripetal Catmull-Rom curves** for the folder lines: the curve passes through
+  every marker, bends without kinks across the whole path, and is fitted on a local
+  plane so it isn't stretched east-west away from the equator.
+- **Nearest-neighbor + 2-opt** behind the folder sort: the shortest path through every
+  marker is the travelling salesman, so it's a greedy walk from each candidate start
+  followed by the reversals that undo the crossings that walk leaves behind.
 
 See [`docs/game-internals.md`](docs/game-internals.md) for the exact game surfaces
 this relies on.
@@ -96,7 +111,8 @@ subway-builder-map-markers/
 ├── src/                  # the mod, in TypeScript (bundled to one index.js)
 │   ├── manifest.json
 │   ├── main.tsx          #   composition root
-│   ├── domain/           #   markers, palette, icon set, geodesic circle, spacing
+│   ├── domain/           #   markers, palette, icon set, geodesic circle, spacing,
+│   │                     #   folder routes + their smooth curve
 │   ├── application/      #   MarkerStore + SettingsStore (shared source of truth)
 │   ├── infrastructure/   #   map layers, persistence, save scoping, UI shell
 │   └── presentation/     #   the React panel
