@@ -34,6 +34,9 @@ export interface MarkerCardProps {
   memberships?: MarkerGroup[]
   onAddToGroup?: (groupId: string) => void
   onFocus: () => void
+  // Opening the folder a chip names: the card lists the lines a station is on, and
+  // each of them is a place to go.
+  onOpenGroup?: (groupId: string) => void
   onRemove: () => void
   onRemoveFromGroup?: (groupId: string) => void
   onSelect: () => void
@@ -54,7 +57,7 @@ const CONTROL_LAYER = { position: 'relative', zIndex: 1 } as const
 // the map on the marker. Selecting the card highlights the matching badge on the map
 // (and vice-versa).
 export function MarkerCard(
-  { drag, groups, marker, memberships, onAddToGroup, onFocus, onRemove, onRemoveFromGroup, onSelect, onUpdate, selected }: MarkerCardProps,
+  { drag, groups, marker, memberships, onAddToGroup, onFocus, onOpenGroup, onRemove, onRemoveFromGroup, onSelect, onUpdate, selected }: MarkerCardProps,
 ): JSX.Element {
   const cardRef = React.useRef<HTMLDivElement>(null)
   const on = memberships ?? []
@@ -165,11 +168,22 @@ export function MarkerCard(
               <span className="shrink-0">Folders</span>
               {on.map((group) => (
                 <span
-                  className="flex items-center gap-1 rounded-full border border-border bg-primary/5 py-0.5 pl-2 pr-1"
+                  className="flex items-center gap-1 rounded-full border border-border bg-primary/5 py-0.5 pl-1 pr-1"
                   key={group.id}
                   style={{ borderColor: group.color ?? undefined }}
                 >
-                  {group.name}
+                  <button
+                    aria-label={`Open ${group.name || 'folder'}`}
+                    className="cursor-pointer rounded-full px-1 hover:bg-primary/20"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onOpenGroup?.(group.id)
+                    }}
+                    title="Open that folder"
+                    type="button"
+                  >
+                    {group.name}
+                  </button>
                   <button
                     aria-label={`Take off ${group.name || 'folder'}`}
                     className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-red-500/25 hover:text-red-300"

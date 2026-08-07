@@ -236,6 +236,7 @@ describe('MarkerCard folders', () => {
 
   function renderWithFolders(memberships: typeof groups = []) {
     const onAddToGroup = vi.fn()
+    const onOpenGroup = vi.fn()
     const onRemoveFromGroup = vi.fn()
     render(
       <MarkerCard
@@ -244,6 +245,7 @@ describe('MarkerCard folders', () => {
         memberships={memberships}
         onAddToGroup={onAddToGroup}
         onFocus={vi.fn()}
+        onOpenGroup={onOpenGroup}
         onRemove={vi.fn()}
         onRemoveFromGroup={onRemoveFromGroup}
         onSelect={vi.fn()}
@@ -254,7 +256,7 @@ describe('MarkerCard folders', () => {
 
     openSettings()
 
-    return { onAddToGroup, onRemoveFromGroup }
+    return { onAddToGroup, onOpenGroup, onRemoveFromGroup }
   }
 
   it('offers no folder controls when there are no folders', () => {
@@ -296,6 +298,13 @@ describe('MarkerCard folders', () => {
     const { onAddToGroup } = renderWithFolders()
     fireEvent.change(screen.getByLabelText('Add to folder'), { target: { value: '' } })
     expect(onAddToGroup).not.toHaveBeenCalled()
+  })
+
+  // Each line a station is on is a place to go: the chip is the way there.
+  it('opens the folder a chip names', () => {
+    const { onOpenGroup } = renderWithFolders(groups)
+    fireEvent.click(screen.getByRole('button', { name: 'Open Line 2' }))
+    expect(onOpenGroup).toHaveBeenCalledWith('g2')
   })
 
   it('takes the marker off one line through onRemoveFromGroup', () => {

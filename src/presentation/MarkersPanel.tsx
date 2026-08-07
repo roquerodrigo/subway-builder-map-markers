@@ -199,6 +199,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
         memberships={withFolders ? groupsHolding(marker.id, groups) : undefined}
         onAddToGroup={(groupId) => store.addToGroup(marker.id, groupId)}
         onFocus={() => controller.focus(marker.id)}
+        onOpenGroup={(groupId) => setOpenFolderId(groupId)}
         onRemove={() => store.remove(marker.id)}
         onRemoveFromGroup={(groupId) => store.removeFromGroup(marker.id, groupId)}
         onSelect={() => store.select(marker.id)}
@@ -226,6 +227,7 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
               setOpenFolderId(null)
             }}
             onFocus={(id) => controller.focus(id)}
+            onOpenGroup={(groupId) => setOpenFolderId(groupId)}
             onRecolor={(color) => store.recolorGroup(openFolder.id, color)}
             onRemove={(id) => store.remove(id)}
             onRemoveFromGroup={(markerId, groupId) => store.removeFromGroup(markerId, groupId)}

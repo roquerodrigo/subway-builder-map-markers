@@ -196,6 +196,56 @@ describe('MarkerStore folders', () => {
     expect(listener).not.toHaveBeenCalled()
   })
 
+  // How a marker looks follows the lines it is on, the way it does on a transit map.
+  describe('the colour of a marker', () => {
+    it('takes the colour of the folder it joins', () => {
+      const { store } = createFixture()
+      const line = store.addGroup('Line 1', '#1266af')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, line.id)
+      expect(store.all()[0].color).toBe('#1266af')
+    })
+
+    it('goes black where two lines meet', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1', '#1266af')
+      const two = store.addGroup('Line 2', '#008162')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, one.id)
+      store.addToGroup(marker.id, two.id)
+      expect(store.all()[0].color).toBe('#000000')
+    })
+
+    it('takes the remaining line s colour when it comes off the other', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1', '#1266af')
+      const two = store.addGroup('Line 2', '#008162')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, one.id)
+      store.addToGroup(marker.id, two.id)
+      store.removeFromGroup(marker.id, one.id)
+      expect(store.all()[0].color).toBe('#008162')
+    })
+
+    it('follows the folder when the folder is recoloured', () => {
+      const { store } = createFixture()
+      const line = store.addGroup('Line 1', '#1266af')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, line.id)
+      store.recolorGroup(line.id, '#22c55e')
+      expect(store.all()[0].color).toBe('#22c55e')
+    })
+
+    it('leaves a colour the player picked alone', () => {
+      const { store } = createFixture()
+      const line = store.addGroup('Line 1', '#1266af')
+      const marker = store.add([0, 0])
+      store.update(marker.id, { color: '#ff00ff' })
+      store.addToGroup(marker.id, line.id)
+      expect(store.all()[0].color).toBe('#ff00ff')
+    })
+  })
+
   // A marker on two lines is an interchange and should look like one without being
   // told; back on one line it is a stop again.
   describe('the interchange icon', () => {

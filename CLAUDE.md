@@ -30,9 +30,13 @@ A new marker is **named the way the game names a station** there: `RoadNamer` re
 game's own `roadsIndex` and `stationNameFromRoads` reproduces the rules taken from the
 renderer bundle (`getStationName`/`formatRoadName`) — widening search radii, a
 cross-street preference scored against the line's bearing, the suffix abbreviations and
-the suffixes that can't stand alone. A marker on two folders takes the **interchange
-icon** and gives it back when it comes off one (`iconForMembership`); any other icon is
-the player's choice and is kept.
+the suffixes that can't stand alone. **How a marker looks follows the folders it is on** (`syncDerivedLooks`, run on every
+commit *and* on load): its folder's color and the station icon on one line, black
+(`INTERCHANGE_COLOR`) and the interchange icon on two or more. Only what the mod
+assigns is traded back and forth — a color or icon that matches no folder is the
+player's choice and is kept, which is why recoloring a folder holds its previous color
+for exactly one reconciliation (`retiredColors`), so the markers still wearing it are
+recognised as having taken it from the folder.
 
 Joining a folder puts a marker where it **lengthens that line least** (cheapest
 insertion, `insertionIndexFor`), never at the end — a stop belongs between two others.

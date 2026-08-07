@@ -397,6 +397,16 @@ describe('MarkersPanel folders', () => {
     expect(store.removeFromGroup).toHaveBeenCalledWith('a', 'g1')
   })
 
+  // The card lists every line a station is on, and each chip is a way into that line.
+  it('follows a folder chip on a card into that folder', () => {
+    const line2: MarkerGroup = { color: null, hidden: false, id: 'g2', markerIds: ['a'], name: 'Line 2' }
+    renderPanel([grouped('a', 'Central')], [line1, line2])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Open folder' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show marker settings' })[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Open Line 2' }))
+    expect(screen.getByLabelText<HTMLInputElement>('Folder name').value).toBe('Line 2')
+  })
+
   // An interchange is on every line that stops there, so a card can join a second
   // folder without leaving the first.
   it('puts a marker on a second folder from its card', () => {

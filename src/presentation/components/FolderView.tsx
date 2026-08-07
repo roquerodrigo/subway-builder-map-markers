@@ -18,6 +18,7 @@ export interface FolderViewProps {
   onBack: () => void
   onDelete: () => void
   onFocus: (id: string) => void
+  onOpenGroup: (groupId: string) => void
   onRecolor: (color: string) => void
   onRemove: (id: string) => void
   onRemoveFromGroup: (markerId: string, groupId: string) => void
@@ -34,7 +35,7 @@ export interface FolderViewProps {
 // through them. A folder is a line with dozens of stops, so it gets the panel to itself
 // rather than unfolding inside a list of other folders.
 export function FolderView(props: FolderViewProps): JSX.Element {
-  const { cardDrag, group, groups, markers, memberships, onAddToGroup, onBack, onDelete, onFocus, onRecolor, onRemove, onRemoveFromGroup, onRename, onSelect, onSortAlongPath, onToggleHidden, onUpdate, selectedId } = props
+  const { cardDrag, group, groups, markers, memberships, onAddToGroup, onBack, onDelete, onFocus, onOpenGroup, onRecolor, onRemove, onRemoveFromGroup, onRename, onSelect, onSortAlongPath, onToggleHidden, onUpdate, selectedId } = props
   const swatch = group.color ?? '#64748b'
 
   return (
@@ -115,6 +116,7 @@ export function FolderView(props: FolderViewProps): JSX.Element {
               memberships={memberships(marker.id)}
               onAddToGroup={(groupId) => onAddToGroup(marker.id, groupId)}
               onFocus={() => onFocus(marker.id)}
+              onOpenGroup={onOpenGroup}
               onRemove={() => onRemove(marker.id)}
               onRemoveFromGroup={(groupId) => onRemoveFromGroup(marker.id, groupId)}
               onSelect={() => onSelect(marker.id)}

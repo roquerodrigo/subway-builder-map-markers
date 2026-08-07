@@ -60,8 +60,10 @@ list. Its **color** is set there: the folder's line takes it on the map, and so 
 every marker created in the folder.
 
 **Put one marker on several lines** — a station where lines meet belongs to each of
-them, and its icon becomes the interchange one as soon as it is on two (back to the
-station icon when it comes off one). Any other icon you pick is left alone. The card lists the folders it is on, with a picker to add another and an **✕** on
+them. A marker looks like the lines it is on: it takes its folder's color and the
+station icon on one line, and goes **black with the interchange icon** as soon as it is
+on two (back to the line's color when it comes off one). A color or icon you pick
+yourself is left alone. Each folder chip on a card is also a way into that folder. The card lists the folders it is on, with a picker to add another and an **✕** on
 each to take it off that one; every line it is on runs through it. Dragging a card
 between folders **moves** it instead.
 
