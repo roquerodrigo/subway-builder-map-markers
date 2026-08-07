@@ -199,6 +199,96 @@ describe('MarkerStore folders', () => {
     expect(store.groups()).toEqual([])
   })
 
+  describe('sortGroupAlongPath', () => {
+    // Marker order is the order the line is drawn in, so a folder filled in some other
+    // order (alphabetically, say) draws a line that criss-crosses the city.
+    function labelsOf(store: MarkerStore, groupId: string): string[] {
+      return store.all().filter((marker) => marker.groupId === groupId).map((marker) => marker.label)
+    }
+
+    function fillFolder(store: MarkerStore, positions: [number, number][]): string {
+      const group = store.addGroup('Line 1')
+      positions.forEach((position, index) => {
+        const marker = store.add(position)
+        store.update(marker.id, { label: `stop-${index}` })
+        store.assignToGroup(marker.id, group.id)
+      })
+
+      return group.id
+    }
+
+    it('reorders the folder along the shortest path through its markers', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[2, 0], [0, 0], [3, 0], [1, 0]])
+      store.sortGroupAlongPath(groupId)
+      const ordered = store.all().filter((marker) => marker.groupId === groupId)
+      expect(ordered.map((marker) => marker.position[0])).toEqual([0, 1, 2, 3])
+    })
+
+    it('notifies and persists the new order', async () => {
+      const { repository, state, store } = createFixture()
+      playing(state, '/saves/a.metro', 'sao-paulo')
+      await store.sync()
+      const groupId = fillFolder(store, [[0, 0], [2, 0], [1, 0]])
+      const listener = vi.fn()
+      store.subscribe(listener)
+      store.sortGroupAlongPath(groupId)
+      expect(listener).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
+      const saved = await repository.loadForSave('/saves/a.metro')
+      expect(saved.map((marker) => marker.position[0])).toEqual([0, 1, 2])
+    })
+
+    it('leaves the markers of every other folder where they are', () => {
+      const { store } = createFixture()
+      const sorted = fillFolder(store, [[2, 0], [0, 0], [1, 0]])
+      const other = store.addGroup('Line 2')
+      const first = store.add([9, 9])
+      const second = store.add([8, 8])
+      store.assignToGroup(first.id, other.id)
+      store.assignToGroup(second.id, other.id)
+      store.sortGroupAlongPath(sorted)
+      expect(labelsOf(store, other.id)).toEqual([first.label, second.label])
+    })
+
+    it('leaves loose markers alone', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[2, 0], [0, 0], [1, 0]])
+      const loose = store.add([5, 5])
+      store.sortGroupAlongPath(groupId)
+      expect(store.all().filter((marker) => marker.groupId == null)).toEqual([
+        store.all().find((marker) => marker.id === loose.id),
+      ])
+    })
+
+    it('does nothing when the folder is already in order', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[0, 0], [1, 0], [2, 0]])
+      const listener = vi.fn()
+      store.subscribe(listener)
+      store.sortGroupAlongPath(groupId)
+      expect(listener).not.toHaveBeenCalled()
+    })
+
+    it('does nothing for a folder that does not exist', () => {
+      const { store } = createFixture()
+      fillFolder(store, [[2, 0], [0, 0], [1, 0]])
+      const listener = vi.fn()
+      store.subscribe(listener)
+      store.sortGroupAlongPath('not-a-folder')
+      expect(listener).not.toHaveBeenCalled()
+    })
+
+    it('does nothing for a folder with too few markers to order', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[1, 0], [0, 0]])
+      const listener = vi.fn()
+      store.subscribe(listener)
+      store.sortGroupAlongPath(groupId)
+      expect(listener).not.toHaveBeenCalled()
+    })
+  })
+
   describe('persistence', () => {
     it('writes folders to the save bucket and the city cache', async () => {
       const { repository, state, store } = createFixture()

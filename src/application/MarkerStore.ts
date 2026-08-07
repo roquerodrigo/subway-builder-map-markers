@@ -8,6 +8,7 @@ import type { Coordinate } from '@/shared/game/Coordinate'
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 import { createMarker } from '@/domain/marker/MarkerFactory'
 import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
+import { orderAlongPath } from '@/domain/route/PathOrder'
 
 type Listener = () => void
 
@@ -245,6 +246,24 @@ export class MarkerStore {
     if (changed) {
       this.commit()
     }
+  }
+
+  // Reorder a folder's markers along the shortest path through them, leaving every
+  // other marker where it is. Marker order is what the drawn line follows, so this is
+  // how a folder that was filled in some other order (alphabetically, say) becomes a
+  // route: one action instead of dragging every card into place.
+  sortGroupAlongPath(groupId: string): void {
+    if (!this.groupList.some((group) => group.id === groupId)) {
+      return
+    }
+    const inGroup = this.markers.filter((marker) => marker.groupId === groupId)
+    const ordered = orderAlongPath(inGroup)
+    if (ordered.every((marker, index) => marker === inGroup[index])) {
+      return
+    }
+    const queue = [...ordered]
+    this.markers = this.markers.map((marker) => (marker.groupId === groupId ? queue.shift() ?? marker : marker))
+    this.commit()
   }
 
   // Reset for a brand-new game (onGameInit): start empty, and stop reading the city's

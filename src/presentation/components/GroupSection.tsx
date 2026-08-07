@@ -36,6 +36,7 @@ export interface GroupSectionProps {
   onRemove: (id: string) => void
   onRename: (name: string) => void
   onSelect: (id: string) => void
+  onSortAlongPath: () => void
   onToggleCollapsed: () => void
   onToggleHidden: () => void
   onUpdate: (id: string, patch: Partial<Omit<Marker, 'id'>>) => void
@@ -47,7 +48,7 @@ export interface GroupSectionProps {
 // drops its markers off the map but keeps them here so they can be edited or shown
 // again; removing a folder keeps its markers (they fall back to "no folder").
 export function GroupSection(props: GroupSectionProps): JSX.Element {
-  const { collapsed, drag, group, groups, markers, onAssign, onDelete, onFocus, onRemove, onRename, onSelect, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
+  const { collapsed, drag, group, groups, markers, onAssign, onDelete, onFocus, onRemove, onRename, onSelect, onSortAlongPath, onToggleCollapsed, onToggleHidden, onUpdate, selectedId } = props
   const swatch = group.color ?? '#64748b'
 
   return (
@@ -90,6 +91,16 @@ export function GroupSection(props: GroupSectionProps): JSX.Element {
           value={group.name}
         />
         <span className="shrink-0 text-xs text-muted-foreground">{markers.length}</span>
+        <button
+          aria-label="Sort markers along the path"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-muted-foreground hover:bg-primary/20 disabled:opacity-40"
+          disabled={markers.length < 3}
+          onClick={onSortAlongPath}
+          title="Reorder this folder's markers along the shortest path — the order the line is drawn in"
+          type="button"
+        >
+          {pathIcon()}
+        </button>
         <button
           aria-label={group.hidden ? 'Show folder' : 'Hide folder'}
           aria-pressed={group.hidden}
@@ -157,6 +168,18 @@ function eyeOffIcon(): JSX.Element {
     <svg fill="none" height="15" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="15">
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
       <line x1="1" x2="23" y1="1" y2="23" />
+    </svg>
+  )
+}
+
+// The route the sort produces: a line bending through three stops.
+function pathIcon(): JSX.Element {
+  return (
+    <svg fill="none" height="15" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="15">
+      <path d="M4 18c6 0 4-12 10-12" strokeLinecap="round" />
+      <circle cx="4" cy="18" fill="currentColor" r="2" stroke="none" />
+      <circle cx="10.5" cy="12" fill="currentColor" r="2" stroke="none" />
+      <circle cx="19" cy="6" fill="currentColor" r="2" stroke="none" />
     </svg>
   )
 }

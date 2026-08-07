@@ -40,6 +40,7 @@ function makeSettings(overrides: Partial<MarkerSettings> = {}): MarkerSettings {
     radiusMeters: 500,
     showInfluence: true,
     showLabels: true,
+    showRouteLines: false,
     showSpacingGuide: false,
     snapToSpacing: false,
     ...overrides,

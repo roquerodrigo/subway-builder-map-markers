@@ -75,6 +75,12 @@ export function SettingsTab({ settings }: SettingsTabProps): JSX.Element {
           onChange={(value) => settings.update({ showInfluence: value })}
         />
         <Toggle
+          checked={current.showRouteLines}
+          description="A smooth line through each folder's markers, in order"
+          label="Show line paths"
+          onChange={(value) => settings.update({ showRouteLines: value })}
+        />
+        <Toggle
           checked={current.showSpacingGuide}
           description="Guide rings at the ideal spacing between markers"
           label="Show spacing guides"

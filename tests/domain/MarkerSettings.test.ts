@@ -16,7 +16,7 @@ import {
 
 type Settings = typeof DEFAULT_SETTINGS
 
-const TOGGLE_KEYS = ['showInfluence', 'showLabels', 'showSpacingGuide', 'snapToSpacing'] as const
+const TOGGLE_KEYS = ['showInfluence', 'showLabels', 'showRouteLines', 'showSpacingGuide', 'snapToSpacing'] as const
 
 // Every field different from DEFAULT_SETTINGS, so settingsEqual can be probed one
 // field at a time.
@@ -26,6 +26,7 @@ const OTHER_SETTINGS: Settings = {
   radiusMeters: 900,
   showInfluence: false,
   showLabels: false,
+  showRouteLines: false,
   showSpacingGuide: false,
   snapToSpacing: false,
 }

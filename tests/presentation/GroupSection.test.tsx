@@ -27,6 +27,7 @@ function renderSection(overrides: {
     onRemove: vi.fn(),
     onRename: vi.fn(),
     onSelect: vi.fn(),
+    onSortAlongPath: vi.fn(),
     onToggleCollapsed: vi.fn(),
     onToggleHidden: vi.fn(),
     onUpdate: vi.fn(),
@@ -44,6 +45,7 @@ function renderSection(overrides: {
       onRemove={handlers.onRemove}
       onRename={handlers.onRename}
       onSelect={handlers.onSelect}
+      onSortAlongPath={handlers.onSortAlongPath}
       onToggleCollapsed={handlers.onToggleCollapsed}
       onToggleHidden={handlers.onToggleHidden}
       onUpdate={handlers.onUpdate}
@@ -122,5 +124,26 @@ describe('GroupSection', () => {
     const { onAssign } = renderSection({ markers: [marker('m1')] })
     fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
     expect(onAssign).toHaveBeenCalledWith('m1', null)
+  })
+
+  describe('sorting the folder along its path', () => {
+    const label = 'Sort markers along the path'
+
+    it('sorts through onSortAlongPath', () => {
+      const { onSortAlongPath } = renderSection({ markers: [marker('m1'), marker('m2'), marker('m3')] })
+      fireEvent.click(screen.getByRole('button', { name: label }))
+      expect(onSortAlongPath).toHaveBeenCalledOnce()
+    })
+
+    // Under three markers there is only one path, so the action would do nothing.
+    it.each([0, 1, 2])('is disabled with %i markers, where there is no order to find', (count) => {
+      renderSection({ markers: Array.from({ length: count }, (_, index) => marker(`m${index}`)) })
+      expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', true)
+    })
+
+    it('is offered as soon as three markers make an order possible', () => {
+      renderSection({ markers: [marker('m1'), marker('m2'), marker('m3')] })
+      expect(screen.getByRole('button', { name: label })).toHaveProperty('disabled', false)
+    })
   })
 })
