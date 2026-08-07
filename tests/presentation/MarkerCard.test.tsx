@@ -230,8 +230,8 @@ describe('MarkerCard settings toggle', () => {
 
 describe('MarkerCard folders', () => {
   const groups = [
-    { collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Line 1' },
-    { collapsed: false, color: null, hidden: false, id: 'g2', markerIds: [], name: 'Line 2' },
+    { color: null, hidden: false, id: 'g1', markerIds: [], name: 'Line 1' },
+    { color: null, hidden: false, id: 'g2', markerIds: [], name: 'Line 2' },
   ]
 
   function renderWithFolders(memberships: typeof groups = []) {

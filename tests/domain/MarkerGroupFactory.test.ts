@@ -7,7 +7,6 @@ describe('createGroup', () => {
     const group = createGroup('Line 1 - Azul')
     expect(group.name).toBe('Line 1 - Azul')
     expect(group.hidden).toBe(false)
-    expect(group.collapsed).toBe(false)
     expect(group.color).toBeNull()
     expect(typeof group.id).toBe('string')
   })

@@ -9,6 +9,8 @@ import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
 import { snapToSpacing } from '@/domain/marker/SpacingSnap'
 import { markerRoutes } from '@/domain/route/MarkerRoute'
 import { routeUnderPoint } from '@/domain/route/RouteHitTest'
+import { stationPath } from '@/domain/route/StationPath'
+import { RoadNamer } from '@/infrastructure/game/RoadNamer'
 import { InfluenceRadiusLayer } from '@/infrastructure/map/InfluenceRadiusLayer'
 import { MarkerLayer } from '@/infrastructure/map/MarkerLayer'
 import { PLACEMENT_CURSOR } from '@/infrastructure/map/placementCursor'
@@ -17,6 +19,7 @@ import { RouteLineLayer } from '@/infrastructure/map/RouteLineLayer'
 
 // How close a dropped marker has to land to a line, in screen pixels, to join it.
 const ON_THE_LINE_PX = 14
+const RADIANS = Math.PI / 180
 
 type PlacementListener = (active: boolean) => void
 
@@ -27,6 +30,7 @@ type PlacementListener = (active: boolean) => void
 // controller, never to the GL instance directly.
 export class MapMarkersController {
   private markerLayer: MarkerLayer
+  private openFolder: null | string = null
   private panelOpen = false
   // Held with the map it was registered on: cancelling has to unregister from that
   // instance, which is not necessarily the one getMap() hands back later.
@@ -41,12 +45,13 @@ export class MapMarkersController {
     private readonly api: SubwayBuilderApi,
     private readonly store: MarkerStore,
     private readonly settings: SettingsStore,
+    private readonly namer: RoadNamer = new RoadNamer(null),
   ) {
     const getMap = (): GlMap | null => this.map()
     this.markerLayer = new MarkerLayer(getMap, {
-      // Clicking a badge takes you to that station in the panel: its folder unfolds and
-      // the card scrolls itself into view.
-      onClick: (id) => this.store.reveal(id),
+      // Clicking a badge selects that station; the panel follows the selection — it
+      // opens the folder holding it and scrolls the card into view.
+      onClick: (id) => this.store.select(id),
       onDragEnd: (id, position) => {
         this.store.update(id, { position })
         this.store.select(id)
@@ -60,7 +65,7 @@ export class MapMarkersController {
       markers: () => this.store.visibleMarkers(),
       onAttach: (markerId, groupId) => {
         this.store.addToGroup(markerId, groupId)
-        this.store.reveal(markerId)
+        this.store.select(markerId)
       },
       routes: () => this.shownRoutes(),
     })
@@ -106,6 +111,12 @@ export class MapMarkersController {
     return () => this.placementListeners.delete(listener)
   }
 
+  // The folder the panel currently has open, if any: a marker placed while looking at
+  // a line belongs to it, without a trip back to the card.
+  setOpenFolder(groupId: null | string): void {
+    this.openFolder = groupId
+  }
+
   // The panel wires this to its mount/unmount. A closed panel leaves the markers as a
   // passive overlay — not draggable or clickable, and faded to the configured idle
   // opacity — so they read as a background sketch and don't get in the way of playing.
@@ -141,6 +152,28 @@ export class MapMarkersController {
     }
   }
 
+  // Which way the folder's line runs where the marker landed — what makes the naming
+  // prefer the street the line crosses, as the game's own naming does.
+  private bearingOn(groupId: string, position: Coordinate): null | number {
+    const route = this.shownRoutes().find((candidate) => candidate.groupId === groupId)
+    if (!route || route.points.length < 2) {
+      return null
+    }
+    const platforms = stationPath(route.points).platforms
+    let closest = platforms[0]
+    let closestDistance = Infinity
+    for (const platform of platforms) {
+      const middle: Coordinate = [(platform[0][0] + platform[1][0]) / 2, (platform[0][1] + platform[1][1]) / 2]
+      const distance = Math.hypot(middle[0] - position[0], middle[1] - position[1])
+      if (distance < closestDistance) {
+        closest = platform
+        closestDistance = distance
+      }
+    }
+
+    return bearingBetween(closest[0], closest[1])
+  }
+
   private beginPlacement(): void {
     const map = this.map()
     if (!map) {
@@ -152,12 +185,18 @@ export class MapMarkersController {
       this.placementActive = false
       this.notifyPlacement()
       const position: Coordinate = [event.lngLat.lng, event.lngLat.lat]
-      const marker = this.store.add(position)
       // Dropped on a line the player can see: that is where they meant to put a stop,
-      // so it joins that folder (at the point of the line it was dropped on).
-      const line = this.lineUnder(position)
-      if (line) {
-        this.store.addToGroup(marker.id, line)
+      // so it joins that folder (at the point of the line it was dropped on), takes
+      // its colour, and is named as a station on that line — the roads name it after
+      // the street the line crosses there.
+      const line = this.lineUnder(position) ?? this.openFolder
+      const folder = this.store.groups().find((group) => group.id === line)
+      const marker = this.store.add(position, {
+        color: folder?.color ?? undefined,
+        label: this.namer.nameFor(position, folder ? this.bearingOn(folder.id, position) : null) ?? undefined,
+      })
+      if (folder) {
+        this.store.addToGroup(marker.id, folder.id)
       }
     }
     this.pendingPlacement = { handler, map }
@@ -242,4 +281,16 @@ export class MapMarkersController {
 
     return snapToSpacing(candidate, neighbors, settings.radiusMeters * OPTIMAL_SPACING_FACTOR)
   }
+}
+
+// The compass bearing from one point to another, 0-360.
+function bearingBetween(from: Coordinate, to: Coordinate): number {
+  const fromLat = from[1] * RADIANS
+  const toLat = to[1] * RADIANS
+  const deltaLng = (to[0] - from[0]) * RADIANS
+  const y = Math.sin(deltaLng) * Math.cos(toLat)
+  const x = Math.cos(fromLat) * Math.sin(toLat) - Math.sin(fromLat) * Math.cos(toLat) * Math.cos(deltaLng)
+  const bearing = Math.atan2(y, x) / RADIANS
+
+  return bearing < 0 ? bearing + 360 : bearing
 }

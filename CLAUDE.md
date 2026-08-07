@@ -22,6 +22,18 @@ and read only to migrate a folder that carries no sequence yet
 card's folder chips are what put one marker on a second line. A marker leaves the map
 only when *every* folder holding it is hidden.
 
+A folder **opens into a view of its own** rather than unfolding in the list, and which
+one is open is the panel's own state (the board no longer carries a `collapsed` flag).
+That open folder is also where a newly placed marker lands, in the folder's color.
+
+A new marker is **named the way the game names a station** there: `RoadNamer` reads the
+game's own `roadsIndex` and `stationNameFromRoads` reproduces the rules taken from the
+renderer bundle (`getStationName`/`formatRoadName`) — widening search radii, a
+cross-street preference scored against the line's bearing, the suffix abbreviations and
+the suffixes that can't stand alone. A marker on two folders takes the **interchange
+icon** and gives it back when it comes off one (`iconForMembership`); any other icon is
+the player's choice and is kept.
+
 Joining a folder puts a marker where it **lengthens that line least** (cheapest
 insertion, `insertionIndexFor`), never at the end — a stop belongs between two others.
 Three routes lead there: the card's picker, dropping a new marker **on a line** while

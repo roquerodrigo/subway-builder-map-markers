@@ -6,7 +6,7 @@ import type { Marker } from '@/domain/marker/Marker'
 import { markerRoutes } from '@/domain/route/MarkerRoute'
 
 function makeGroup(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { collapsed: false, color: null, hidden: false, id: 'line-1', markerIds: [], name: 'Line 1', ...overrides }
+  return { color: null, hidden: false, id: 'line-1', markerIds: [], name: 'Line 1', ...overrides }
 }
 
 function makeMarker(id: string, overrides: Partial<Marker> = {}): Marker {

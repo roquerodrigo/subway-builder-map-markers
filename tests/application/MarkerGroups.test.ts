@@ -47,6 +47,20 @@ describe('MarkerStore folders', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
+  // A marker created in a folder takes the folder's colour and whatever name the
+  // caller resolved for it.
+  it('seeds a new marker with the colour and name it was given', () => {
+    const { store } = createFixture()
+    const marker = store.add([0, 0], { color: '#22c55e', label: 'Av Paulista' })
+    expect(marker.color).toBe('#22c55e')
+    expect(marker.label).toBe('Av Paulista')
+  })
+
+  it('falls back to its own numbering when no name was resolved', () => {
+    const { store } = createFixture()
+    expect(store.add([0, 0]).label).toBe('Marker 1')
+  })
+
   it('puts a marker on a folder s line', () => {
     const { store } = createFixture()
     const group = store.addGroup('Line 1')
@@ -163,6 +177,79 @@ describe('MarkerStore folders', () => {
     expect(store.groups().map((group) => group.markerIds)).toEqual([[], []])
   })
 
+  // The folder's color is its line's color on the map, and what a marker created in
+  // the folder starts out as.
+  it('recolours a folder', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    store.recolorGroup(group.id, '#22c55e')
+    expect(store.groups()[0].color).toBe('#22c55e')
+  })
+
+  it('ignores a recolour to the colour it already has, and an unknown folder', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1', '#22c55e')
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.recolorGroup(group.id, '#22c55e')
+    store.recolorGroup('no-such-folder', '#000000')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  // A marker on two lines is an interchange and should look like one without being
+  // told; back on one line it is a stop again.
+  describe('the interchange icon', () => {
+    it('turns a marker on a second line into an interchange', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1')
+      const two = store.addGroup('Line 2')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, one.id)
+      expect(store.all()[0].icon).toBe('station')
+      store.addToGroup(marker.id, two.id)
+      expect(store.all()[0].icon).toBe('interchange')
+    })
+
+    it('turns it back into a stop when it comes off one of them', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1')
+      const two = store.addGroup('Line 2')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, one.id)
+      store.addToGroup(marker.id, two.id)
+      store.removeFromGroup(marker.id, two.id)
+      expect(store.all()[0].icon).toBe('station')
+    })
+
+    it('settles a board that arrives with the wrong icon, on load', async () => {
+      const { repository, state, store } = createFixture()
+      await repository.saveForSave('/saves/a.metro', [
+        { color: '#fff', icon: 'interchange', id: 'm1', label: 'One line', position: [0, 0] },
+        { color: '#fff', icon: 'station', id: 'm2', label: 'Two lines', position: [1, 1] },
+      ], null)
+      await repository.saveGroupsForSave('/saves/a.metro', [
+        { color: null, hidden: false, id: 'g1', markerIds: ['m1', 'm2'], name: 'Line 1' },
+        { color: null, hidden: false, id: 'g2', markerIds: ['m2'], name: 'Line 2' },
+      ], null)
+      playing(state, '/saves/a.metro', 'sao-paulo')
+
+      await store.sync()
+
+      expect(store.all().map((marker) => marker.icon)).toEqual(['station', 'interchange'])
+    })
+
+    it('leaves an icon the player picked alone', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1')
+      const two = store.addGroup('Line 2')
+      const marker = store.add([0, 0])
+      store.update(marker.id, { icon: 'bus' })
+      store.addToGroup(marker.id, one.id)
+      store.addToGroup(marker.id, two.id)
+      expect(store.all()[0].icon).toBe('bus')
+    })
+  })
+
   it('renames a folder', () => {
     const { store } = createFixture()
     const group = store.addGroup('Line 1')
@@ -215,94 +302,6 @@ describe('MarkerStore folders', () => {
     store.setGroupHidden(group.id, false)
     store.toggleGroupHidden('no-such-folder')
     expect(listener).not.toHaveBeenCalled()
-  })
-
-  it('collapses and expands a folder', () => {
-    const { store } = createFixture()
-    const group = store.addGroup('Line 1')
-    expect(store.groups()[0].collapsed).toBe(false)
-    store.setGroupCollapsed(group.id, true)
-    expect(store.groups()[0].collapsed).toBe(true)
-    store.toggleGroupCollapsed(group.id)
-    expect(store.groups()[0].collapsed).toBe(false)
-  })
-
-  it('ignores collapsing a folder that is already in that state, and an unknown folder', () => {
-    const { store } = createFixture()
-    const group = store.addGroup('Line 1')
-    const listener = vi.fn()
-    store.subscribe(listener)
-    store.setGroupCollapsed(group.id, false)
-    store.toggleGroupCollapsed('no-such-folder')
-    expect(listener).not.toHaveBeenCalled()
-  })
-
-  it('persists the collapsed state to the save bucket', async () => {
-    const { repository, state, store } = createFixture()
-    playing(state, '/saves/a.metro', 'sao-paulo')
-    await store.sync()
-    const group = store.addGroup('Line 1')
-    store.setGroupCollapsed(group.id, true)
-    await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
-    const saved = await repository.loadGroupsForSave('/saves/a.metro')
-    expect(saved[0].collapsed).toBe(true)
-  })
-
-  // Clicking a badge on the map has to land on that marker's card in the panel, which
-  // means the folder holding it can't stay folded.
-  describe('reveal', () => {
-    it('selects the marker and unfolds the folder holding it', () => {
-      const { store } = createFixture()
-      const group = store.addGroup('Line 1')
-      const marker = store.add([0, 0])
-      store.addToGroup(marker.id, group.id)
-      store.setGroupCollapsed(group.id, true)
-      store.select(null)
-
-      store.reveal(marker.id)
-
-      expect(store.selected()).toBe(marker.id)
-      expect(store.groups()[0].collapsed).toBe(false)
-    })
-
-    it('leaves an already open folder alone', () => {
-      const { store } = createFixture()
-      const group = store.addGroup('Line 1')
-      const marker = store.add([0, 0])
-      store.addToGroup(marker.id, group.id)
-      store.select(null)
-      const listener = vi.fn()
-      store.subscribe(listener)
-
-      store.reveal(marker.id)
-
-      expect(listener).toHaveBeenCalledTimes(1) // the selection, nothing else
-    })
-
-    // An interchange is on several lines; unfolding all of them would bury the card
-    // that was asked for under the other folders.
-    it('unfolds only the first folder of a marker on several lines', () => {
-      const { store } = createFixture()
-      const one = store.addGroup('Line 1')
-      const two = store.addGroup('Line 2')
-      const marker = store.add([0, 0])
-      store.addToGroup(marker.id, one.id)
-      store.addToGroup(marker.id, two.id)
-      store.setGroupCollapsed(one.id, true)
-      store.setGroupCollapsed(two.id, true)
-
-      store.reveal(marker.id)
-
-      expect(store.groups().map((group) => group.collapsed)).toEqual([false, true])
-    })
-
-    it('still selects a marker no folder holds', () => {
-      const { store } = createFixture()
-      const marker = store.add([0, 0])
-      store.select(null)
-      store.reveal(marker.id)
-      expect(store.selected()).toBe(marker.id)
-    })
   })
 
   describe('sortGroupAlongPath', () => {
@@ -483,7 +482,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', groupId: 'g1', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ], null)
       await repository.saveGroupsForSave('/saves/a.metro', [
-        { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1' },
+        { color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1' },
       ], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
@@ -497,7 +496,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ])
       await repository.saveGroupsRecent('sao-paulo', [
-        { collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Cached' },
+        { color: null, hidden: false, id: 'g1', markerIds: [], name: 'Cached' },
       ])
       playing(state, '/saves/_auto_new.metro', 'sao-paulo')
       await store.sync()
@@ -506,7 +505,7 @@ describe('MarkerStore folders', () => {
 
     it('does not inherit the cached folders when a brand-new game starts, and keeps them on disk', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveGroupsRecent('sao-paulo', [{ collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Old' }])
+      await repository.saveGroupsRecent('sao-paulo', [{ color: null, hidden: false, id: 'g1', markerIds: [], name: 'Old' }])
       playing(state, null, 'sao-paulo')
       store.startNewGame()
       await store.sync()

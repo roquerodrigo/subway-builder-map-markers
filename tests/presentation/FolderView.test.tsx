@@ -5,10 +5,10 @@ import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
 
 import { h } from '@/infrastructure/ui/react'
-import { GroupSection } from '@/presentation/components/GroupSection'
+import { FolderView } from '@/presentation/components/FolderView'
 
 function group(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1', ...overrides }
+  return { color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1', ...overrides }
 }
 
 function marker(id: string): Marker {
@@ -16,41 +16,41 @@ function marker(id: string): Marker {
 }
 
 function renderSection(overrides: {
-  collapsed?: boolean
   group?: MarkerGroup
   groups?: MarkerGroup[]
   markers?: Marker[]
 } = {}) {
   const handlers = {
     onAddToGroup: vi.fn(),
+    onBack: vi.fn(),
     onDelete: vi.fn(),
     onFocus: vi.fn(),
+    onRecolor: vi.fn(),
     onRemove: vi.fn(),
     onRemoveFromGroup: vi.fn(),
     onRename: vi.fn(),
     onSelect: vi.fn(),
     onSortAlongPath: vi.fn(),
-    onToggleCollapsed: vi.fn(),
     onToggleHidden: vi.fn(),
     onUpdate: vi.fn(),
   }
   const theGroup = overrides.group ?? group()
   render(
-    <GroupSection
-      collapsed={overrides.collapsed ?? false}
+    <FolderView
       group={theGroup}
       groups={overrides.groups ?? [theGroup]}
       markers={overrides.markers ?? [marker('m1')]}
       memberships={() => [theGroup]}
       onAddToGroup={handlers.onAddToGroup}
+      onBack={handlers.onBack}
       onDelete={handlers.onDelete}
       onFocus={handlers.onFocus}
+      onRecolor={handlers.onRecolor}
       onRemove={handlers.onRemove}
       onRemoveFromGroup={handlers.onRemoveFromGroup}
       onRename={handlers.onRename}
       onSelect={handlers.onSelect}
       onSortAlongPath={handlers.onSortAlongPath}
-      onToggleCollapsed={handlers.onToggleCollapsed}
       onToggleHidden={handlers.onToggleHidden}
       onUpdate={handlers.onUpdate}
       selectedId={null}
@@ -64,7 +64,7 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn()
 })
 
-describe('GroupSection', () => {
+describe('FolderView', () => {
   it('shows the folder name and its marker count', () => {
     renderSection({ markers: [marker('m1'), marker('m2')] })
     expect(screen.getByLabelText<HTMLInputElement>('Folder name').value).toBe('Line 1')
@@ -76,32 +76,29 @@ describe('GroupSection', () => {
     expect(screen.getAllByLabelText('Marker name')).toHaveLength(2)
   })
 
-  it('hides the cards while collapsed', () => {
-    renderSection({ collapsed: true, markers: [marker('m1')] })
-    expect(screen.queryByLabelText('Marker name')).toBeNull()
-  })
-
   it('explains an empty folder', () => {
     renderSection({ markers: [] })
     expect(screen.getByText(/Empty/)).toBeDefined()
+  })
+
+  it('goes back to the folder list', () => {
+    const { onBack } = renderSection()
+    fireEvent.click(screen.getByRole('button', { name: 'Back to folders' }))
+    expect(onBack).toHaveBeenCalledOnce()
+  })
+
+  // The folder's color is its line's color on the map, and what a marker created in
+  // the folder starts out as.
+  it('recolours the folder', () => {
+    const { onRecolor } = renderSection()
+    fireEvent.click(screen.getByRole('button', { name: 'Choose color #22c55e' }))
+    expect(onRecolor).toHaveBeenCalledWith('#22c55e')
   })
 
   it('renames the folder through onRename', () => {
     const { onRename } = renderSection()
     fireEvent.change(screen.getByLabelText('Folder name'), { target: { value: 'Blue Line' } })
     expect(onRename).toHaveBeenCalledWith('Blue Line')
-  })
-
-  it('collapses through onToggleCollapsed', () => {
-    const { onToggleCollapsed } = renderSection()
-    fireEvent.click(screen.getByRole('button', { name: 'Collapse folder' }))
-    expect(onToggleCollapsed).toHaveBeenCalledOnce()
-  })
-
-  it('offers an expand affordance while collapsed', () => {
-    const { onToggleCollapsed } = renderSection({ collapsed: true })
-    fireEvent.click(screen.getByRole('button', { name: 'Expand folder' }))
-    expect(onToggleCollapsed).toHaveBeenCalledOnce()
   })
 
   it('hides the folder from a visible state', () => {

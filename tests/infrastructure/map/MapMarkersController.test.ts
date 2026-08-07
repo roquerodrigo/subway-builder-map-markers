@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { MarkerSettings } from '@/domain/settings/MarkerSettings'
+import type { RoadNamer } from '@/infrastructure/game/RoadNamer'
 import type { SettingsRepository } from '@/infrastructure/persistence/SettingsRepository'
 import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 
@@ -69,13 +70,14 @@ describe('MapMarkersController', () => {
   let settings: SettingsStore
   let store: MarkerStore
 
-  function build(options: { scale?: number, settings?: Partial<MarkerSettings> } = {}): void {
+  function build(options: { namer?: () => null | string, scale?: number, settings?: Partial<MarkerSettings> } = {}): void {
     map = createFakeGlMap({ scale: options.scale })
     currentMap = map
     api = { utils: { getMap: (): unknown => currentMap } }
     store = new MarkerStore(new MarkerRepository(createModStorage()), new GameSession(api, null))
     settings = new SettingsStore(createSettingsRepository({ ...DEFAULT_SETTINGS, ...options.settings }))
-    controller = new MapMarkersController(api, store, settings)
+    const namer = { nameFor: options.namer ?? ((): null => null) } as unknown as RoadNamer
+    controller = new MapMarkersController(api, store, settings, namer)
   }
 
   function fillFolder(name: string, positions: [number, number][]): MarkerGroup {
@@ -487,6 +489,59 @@ describe('MapMarkersController', () => {
   // folder lines are what an overview needs, and they stay.
   // Dropping a marker on a line the player can see is how they say "this is a stop on
   // that line" — no trip to the panel needed.
+  // A marker arrives named the way the game names a station there, coloured like the
+  // folder it joins.
+  describe('naming and colouring a new marker', () => {
+    it('takes the name the roads give it', () => {
+      build({ namer: () => 'Av Paulista' })
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0 } })
+      expect(store.all()[0].label).toBe('Av Paulista')
+    })
+
+    it('falls back to the board s numbering where the roads say nothing', () => {
+      build({ namer: () => null })
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0 } })
+      expect(store.all()[0].label).toBe('Marker 1')
+    })
+
+    it('takes the colour of the folder it lands on', () => {
+      const group = fillFolder('Line 1', [[0, 0], [1, 0]])
+      store.recolorGroup(group.id, '#22c55e')
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 0, lng: 0.5 } })
+      expect(store.all()[2].color).toBe('#22c55e')
+    })
+
+    // Placed while a folder is open in the panel: it belongs to that folder even
+    // though it landed nowhere near its line.
+    it('joins the folder the panel has open', () => {
+      const group = fillFolder('Line 1', [[0, 0], [1, 0]])
+      store.recolorGroup(group.id, '#22c55e')
+      controller.setOpenFolder(group.id)
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 5, lng: 5 } })
+      const placed = store.all()[2]
+      expect(store.groups()[0].markerIds).toContain(placed.id)
+      expect(placed.color).toBe('#22c55e')
+    })
+
+    it('leaves a marker unattached once the panel is back out of the folder', () => {
+      const group = fillFolder('Line 1', [[0, 0], [1, 0]])
+      controller.setOpenFolder(group.id)
+      controller.setOpenFolder(null)
+      controller.start()
+      controller.togglePlacement()
+      map.emit('click', { lngLat: { lat: 5, lng: 5 } })
+      expect(store.groups()[0].markerIds).toHaveLength(2)
+    })
+  })
+
   describe('placing a marker on a line', () => {
     it('puts it on the folder whose line it landed on', () => {
       const group = fillFolder('Line 1', [[0, 0], [1, 0]])
@@ -576,9 +631,8 @@ describe('MapMarkersController', () => {
   describe('clicking a badge', () => {
     // The panel is where a marker is edited, so clicking it on the map has to land on
     // its card — which means unfolding the folder holding it.
-    it('selects the marker and unfolds the folder holding it', () => {
-      const group = fillFolder('Line 1', [[1, 2], [3, 4]])
-      store.setGroupCollapsed(group.id, true)
+    it('selects the marker, which is what takes the panel to its card', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4]])
       controller.start()
       controller.setPanelOpen(true) // badges only take clicks while the panel is open
       store.select(null)
@@ -586,7 +640,6 @@ describe('MapMarkersController', () => {
       badge.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
       window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
       expect(store.selected()).toBe(store.all()[0].id)
-      expect(store.groups()[0].collapsed).toBe(false)
     })
   })
 

@@ -6,7 +6,7 @@ import type { Marker } from '@/domain/marker/Marker'
 import { withLegacyGroupIds, withSequencesFromLegacy } from '@/domain/group/LegacyGroupLink'
 
 function group(id: string, markerIds: string[] = []): MarkerGroup {
-  return { collapsed: false, color: null, hidden: false, id, markerIds, name: id }
+  return { color: null, hidden: false, id, markerIds, name: id }
 }
 
 function marker(id: string, groupId?: null | string): Marker {

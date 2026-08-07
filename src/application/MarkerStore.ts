@@ -1,5 +1,6 @@
 import type { MarkerGroup } from '@/domain/group/MarkerGroup'
 import type { Marker } from '@/domain/marker/Marker'
+import type { MarkerSeed } from '@/domain/marker/MarkerFactory'
 import type { DropSide } from '@/domain/ordering/ItemOrder'
 import type { MarkerRepository } from '@/infrastructure/persistence/MarkerRepository'
 import type { GameSession } from '@/infrastructure/store/GameSession'
@@ -7,6 +8,7 @@ import type { Coordinate } from '@/shared/game/Coordinate'
 
 import { withLegacyGroupIds, withSequencesFromLegacy } from '@/domain/group/LegacyGroupLink'
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
+import { iconForMembership } from '@/domain/marker/InterchangeIcon'
 import { createMarker } from '@/domain/marker/MarkerFactory'
 import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
 import { insertionIndexFor, orderAlongPath } from '@/domain/route/PathOrder'
@@ -79,8 +81,8 @@ export class MarkerStore {
     private readonly session: GameSession,
   ) {}
 
-  add(position: Coordinate): Marker {
-    const marker = createMarker(position, this.markers.length + 1)
+  add(position: Coordinate, seed: MarkerSeed = {}): Marker {
+    const marker = createMarker(position, this.markers.length + 1, seed)
     this.markers = [...this.markers, marker]
     this.selectedId = marker.id
     this.commit()
@@ -183,6 +185,11 @@ export class MarkerStore {
     this.commit()
   }
 
+  // Set the folder's color: its line takes it, and so does every marker created in it.
+  recolorGroup(id: string, color: null | string): void {
+    this.updateGroup(id, (group) => (group.color === color ? group : { ...group, color }))
+  }
+
   remove(id: string): void {
     const next = this.markers.filter((marker) => marker.id !== id)
     if (next.length === this.markers.length) {
@@ -246,18 +253,6 @@ export class MarkerStore {
     this.inheritsCityCache = true
   }
 
-  // Select a marker and make sure the panel can actually show it: a folder holding it
-  // is expanded, so the card exists to be scrolled to. Used by the map, where clicking
-  // a badge should take you to that station in the list. Only the first folder opens —
-  // an interchange would otherwise unfold every line it is on.
-  reveal(id: string): void {
-    const holder = this.groupList.find((group) => group.markerIds.includes(id))
-    if (holder?.collapsed) {
-      this.setGroupCollapsed(holder.id, false)
-    }
-    this.select(id)
-  }
-
   select(id: null | string): void {
     if (this.selectedId === id) {
       return
@@ -268,21 +263,6 @@ export class MarkerStore {
 
   selected(): null | string {
     return this.selectedId
-  }
-
-  setGroupCollapsed(id: string, collapsed: boolean): void {
-    let changed = false
-    this.groupList = this.groupList.map((group) => {
-      if (group.id !== id || group.collapsed === collapsed) {
-        return group
-      }
-      changed = true
-
-      return { ...group, collapsed }
-    })
-    if (changed) {
-      this.commit()
-    }
   }
 
   setGroupHidden(id: string, hidden: boolean): void {
@@ -395,16 +375,13 @@ export class MarkerStore {
     this.markers = loaded.markers
     this.groupList = loaded.groups
     this.selectedId = null
+    // A board written before the icon followed the folders can arrive with an
+    // interchange that stops on one line, or a stop where two lines meet. Settle it on
+    // load rather than at the player's next edit, which would look like a glitch.
+    this.syncInterchangeIcons()
     this.notify()
     if (loaded.markers.length > 0 || loaded.groups.length > 0) {
       this.persist() // seed this save's buckets + the city cache
-    }
-  }
-
-  toggleGroupCollapsed(id: string): void {
-    const group = this.groupList.find((candidate) => candidate.id === id)
-    if (group) {
-      this.setGroupCollapsed(id, !group.collapsed)
     }
   }
 
@@ -449,6 +426,7 @@ export class MarkerStore {
   }
 
   private commit(): void {
+    this.syncInterchangeIcons()
     this.notify()
     this.persist()
   }
@@ -548,6 +526,31 @@ export class MarkerStore {
     }
     this.markers = next
     this.commit()
+  }
+
+  // A marker on two lines is an interchange and should look like one; back on one line
+  // it is a stop again. Only those two icons are traded for each other, so an icon the
+  // player picked is left alone.
+  private syncInterchangeIcons(): void {
+    const folders = new Map<string, number>()
+    for (const group of this.groupList) {
+      for (const markerId of group.markerIds) {
+        folders.set(markerId, (folders.get(markerId) ?? 0) + 1)
+      }
+    }
+    let changed = false
+    const next = this.markers.map((marker) => {
+      const icon = iconForMembership(marker.icon, folders.get(marker.id) ?? 0)
+      if (icon === marker.icon) {
+        return marker
+      }
+      changed = true
+
+      return { ...marker, icon }
+    })
+    if (changed) {
+      this.markers = next
+    }
   }
 
   private updateGroup(id: string, change: (group: MarkerGroup) => MarkerGroup): void {
