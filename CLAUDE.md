@@ -21,13 +21,17 @@ and read only to migrate a folder that carries no sequence yet
 (`domain/group/LegacyGroupLink`). Dragging a card **moves** it between folders; the
 card's folder chips are what put one marker on a second line. A marker leaves the map
 only when *every* folder holding it is hidden. A folder's markers are
-also joined by a **smooth dashed guide line** (`showRouteLines`, on by default) — a
-centripetal Catmull-Rom curve through them, in panel order, sampled into the geometry
-because a GL line layer only joins vertices with straight segments; dashed so it never
-reads as track already built. Markers outside a folder are never connected. Because
-marker order **is** the drawn line, each folder header carries a **sort along the path**
-action (nearest-neighbor from every start + 2-opt) — the way a folder filled in some
-other order becomes a route.
+also joined by a **dashed guide line** (`showRouteLines`, on by default): a straight
+**platform** at every station — 229 m, measured off the game's own `platformMapItems` —
+and cubic Hermite curves between them that leave and enter each platform along its own
+direction. All of it is sampled into the geometry, because a GL line layer only joins
+vertices with straight segments. Dashed so it never reads as track already built, and
+**outlined** in a color taken from `api.ui.getResolvedTheme()` — the outline contrasts
+with the map, not with the line, which is what keeps a near-black line readable on a
+dark map. Markers outside a folder are never connected. Because marker order **is** the
+drawn line, each folder header carries a **sort along the path** action
+(nearest-neighbor from every start + 2-opt) — the way a folder filled in some other
+order becomes a route.
 
 Unlike auto-lines, this mod **never touches routes, tracks or trains**, and it edits
 **stations only** through that one opt-in naming path (off by default) — so none of the
@@ -154,6 +158,15 @@ game. To re-inject over CDP, the IIFE re-runs
 
 ## Pitfalls
 
+- **The badges are a fixed screen size, so they have to leave when the map zooms out.**
+  Below the thresholds in `MarkerLayer` a board's worth of them collides into an
+  unreadable clump: names go first, then the badges (the folder lines stay — they're
+  what an overview is for). A zoom *is* a `'move'`, which is where this is re-applied.
+- **A live check driven over CDP has to let React repaint.** Reading the DOM in the
+  same evaluate that dispatched the event reads the state before the render, which
+  looks exactly like the handler never ran. Dispatch in one call, assert in the next.
+  Synthetic `pointerdown`/`pointerup` also leave the drag handlers armed if they don't
+  pair up, and the next click anywhere then lands on the badge instead.
 - **The toolbar `icon` is a key into the game's curated set** (`MapPin`). An unknown
   key renders **no button** — if it disappears after a game update, check the icon
   key first.

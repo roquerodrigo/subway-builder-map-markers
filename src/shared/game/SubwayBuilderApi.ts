@@ -19,6 +19,9 @@ export interface SubwayBuilderApi {
   hooks?: Record<string, ((callback: (arg?: string) => void) => void) | undefined>
   ui?: {
     addFloatingPanel?(config: FloatingPanelConfig): void
+    // 'dark' | 'light' — the theme actually showing, with the game's "system" setting
+    // already resolved. The route outline follows it, since it contrasts with the map.
+    getResolvedTheme?(): string
     showNotification?(message: string, kind?: string): void
     unregisterComponent?(location: string, id: string): void
   }

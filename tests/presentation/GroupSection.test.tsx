@@ -126,6 +126,7 @@ describe('GroupSection', () => {
 
   it('takes a marker off this folder through onRemoveFromGroup', () => {
     const { onRemoveFromGroup } = renderSection({ markers: [marker('m1')] })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show marker settings' })[0])
     fireEvent.click(screen.getByRole('button', { name: 'Take off Line 1' }))
     expect(onRemoveFromGroup).toHaveBeenCalledWith('m1', 'g1')
   })
@@ -135,6 +136,7 @@ describe('GroupSection', () => {
   it('puts a marker on another folder through onAddToGroup', () => {
     const other = group({ id: 'g2', name: 'Line 2' })
     const handlers = renderSection({ groups: [group(), other], markers: [marker('m1')] })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show marker settings' })[0])
     fireEvent.change(screen.getByLabelText('Add to folder'), { target: { value: 'g2' } })
     expect(handlers.onAddToGroup).toHaveBeenCalledWith('m1', 'g2')
   })

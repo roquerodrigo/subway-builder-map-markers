@@ -5,7 +5,7 @@ import type { Marker } from '@/domain/marker/Marker'
 import type { DropSide } from '@/domain/ordering/ItemOrder'
 
 import { markerIcon } from '@/domain/marker/MarkerIconSet'
-import { h, React } from '@/infrastructure/ui/react'
+import { Fragment, h, React } from '@/infrastructure/ui/react'
 import { ColorSwatches } from '@/presentation/components/ColorSwatches'
 import { DragHandle } from '@/presentation/components/DragHandle'
 import { IconGlyph } from '@/presentation/components/IconGlyph'
@@ -59,6 +59,12 @@ export function MarkerCard(
   const cardRef = React.useRef<HTMLDivElement>(null)
   const on = memberships ?? []
   const available = (groups ?? []).filter((group) => !on.some((held) => held.id === group.id))
+  // Colors, icons and folders are the settings of a marker, not its identity: on a
+  // board of hundreds they push every other card off the screen, so a card shows its
+  // name until you ask for the rest. Selecting one opens it — that is how clicking a
+  // badge on the map lands you on its settings — and the toggle still wins afterwards.
+  const [showDetails, setShowDetails] = React.useState(selected)
+  React.useEffect(() => setShowDetails(selected), [selected])
 
   // Selection usually starts on the map (clicking or dropping a badge), and the
   // matching card is often scrolled out of sight — highlighting it there would be
@@ -101,6 +107,29 @@ export function MarkerCard(
           value={marker.label}
         />
         <button
+          aria-expanded={showDetails}
+          aria-label={showDetails ? 'Hide marker settings' : 'Show marker settings'}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-muted-foreground hover:bg-primary/20"
+          onClick={(event) => {
+            event.stopPropagation()
+            setShowDetails(!showDetails)
+          }}
+          title={showDetails ? 'Hide the color, icon and folders' : 'Show the color, icon and folders'}
+          type="button"
+        >
+          <svg
+            fill="none"
+            height="14"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            style={{ transform: showDetails ? 'none' : 'rotate(-90deg)', transition: 'transform 120ms ease' }}
+            viewBox="0 0 24 24"
+            width="14"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <button
           aria-label="Remove marker"
           className="flex h-7 w-7 items-center justify-center rounded-md bg-red-500/15 text-red-400 hover:bg-red-500/25"
           onClick={(event) => {
@@ -117,14 +146,20 @@ export function MarkerCard(
         </button>
       </div>
 
-      <div style={CONTROL_LAYER}>
-        <ColorSwatches onChange={(color) => onUpdate({ color })} value={marker.color} />
-      </div>
-      <div style={CONTROL_LAYER}>
-        <IconPicker color={marker.color} onChange={(icon) => onUpdate({ icon })} value={marker.icon} />
-      </div>
+      {showDetails ?
+          (
+            <>
+              <div style={CONTROL_LAYER}>
+                <ColorSwatches onChange={(color) => onUpdate({ color })} value={marker.color} />
+              </div>
+              <div style={CONTROL_LAYER}>
+                <IconPicker color={marker.color} onChange={(icon) => onUpdate({ icon })} value={marker.icon} />
+              </div>
+            </>
+          ) :
+        null}
 
-      {groups && groups.length > 0 ?
+      {showDetails && groups && groups.length > 0 ?
           (
             <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" style={CONTROL_LAYER}>
               <span className="shrink-0">Folders</span>

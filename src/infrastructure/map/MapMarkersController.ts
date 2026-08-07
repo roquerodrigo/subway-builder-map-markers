@@ -36,7 +36,9 @@ export class MapMarkersController {
   ) {
     const getMap = (): GlMap | null => this.map()
     this.markerLayer = new MarkerLayer(getMap, {
-      onClick: (id) => this.store.select(id),
+      // Clicking a badge takes you to that station in the panel: its folder unfolds and
+      // the card scrolls itself into view.
+      onClick: (id) => this.store.reveal(id),
       onDragEnd: (id, position) => {
         this.store.update(id, { position })
         this.store.select(id)
@@ -45,7 +47,10 @@ export class MapMarkersController {
       snapPosition: (id, candidate) => this.snapToNeighbors(id, candidate),
     })
     this.radiusLayer = new InfluenceRadiusLayer(getMap)
-    this.routeLayer = new RouteLineLayer(getMap)
+    // The route outline contrasts with the map, so it follows the theme the game is
+    // showing rather than a fixed color. Read per draw: the player can switch it while
+    // the mod is loaded.
+    this.routeLayer = new RouteLineLayer(getMap, () => this.isDarkTheme())
   }
 
   cancelPlacement(): void {
@@ -132,6 +137,16 @@ export class MapMarkersController {
     this.pendingPlacement = { handler, map }
     map.once('click', handler)
     this.notifyPlacement()
+  }
+
+  // Defaults to dark, which is the game's own default and the safer guess: a light
+  // outline on a dark map is far more wrong than the other way round.
+  private isDarkTheme(): boolean {
+    try {
+      return this.api.ui?.getResolvedTheme?.() !== 'light'
+    } catch {
+      return true
+    }
   }
 
   private map(): GlMap | null {

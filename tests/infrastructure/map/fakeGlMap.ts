@@ -8,6 +8,9 @@ import type { GlMap, LngLat, LngLatLike, MapMouseEvent, Point } from '@/shared/g
 // lng 1 sits at x 100), but makes one pixel worth a kilometre on the ground — so a
 // test about metres (the spacing snap) passes a finer scale instead.
 const DEFAULT_SCALE = 100
+// Well above the thresholds where the badges drop out, so a test that says nothing
+// about zoom sees every badge.
+const DEFAULT_ZOOM = 14
 
 // The map's own container is offset from the viewport, so a test can tell a client
 // coordinate apart from the map-relative one a drag has to convert it into.
@@ -46,6 +49,9 @@ export interface FakeGlMap extends GlMap {
   sources: Map<string, FakeSource>
   styleLoaded: boolean
   unproject: Mock<(point: [number, number]) => LngLat>
+  // The zoom the fake reports; tests move it to cross the thresholds at which the
+  // badges and their names drop out.
+  zoom: number
 }
 
 export interface FakeSource {
@@ -152,6 +158,8 @@ export function createFakeGlMap(options: { scale?: number } = {}): FakeGlMap {
       return map.sources.get(id)
     },
 
+    getZoom: (): number => map.zoom,
+
     isStyleLoaded: vi.fn((): boolean => map.styleLoaded),
 
     layerOrder: [],
@@ -205,6 +213,8 @@ export function createFakeGlMap(options: { scale?: number } = {}): FakeGlMap {
       lat: (offset.y - point[1]) / scale,
       lng: (point[0] - offset.x) / scale,
     })),
+
+    zoom: DEFAULT_ZOOM,
   }
 
   return map
