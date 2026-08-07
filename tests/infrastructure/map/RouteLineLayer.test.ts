@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MarkerRoute } from '@/domain/route/MarkerRoute'
 
-import { smoothPath } from '@/domain/route/SmoothPath'
+import { stationPath } from '@/domain/route/StationPath'
 import { RouteLineLayer } from '@/infrastructure/map/RouteLineLayer'
 
 import type { FakeGlMap } from './fakeGlMap'
@@ -12,12 +12,14 @@ import { createFakeGlMap } from './fakeGlMap'
 const SOURCE_ID = 'sbmm-route'
 const CASING_LAYER = 'sbmm-route-casing'
 const LINE_LAYER = 'sbmm-route-line'
+const PLATFORM_LAYER = 'sbmm-route-platform'
+const PLATFORM_CASING_LAYER = 'sbmm-route-platform-casing'
 const RETRY_DELAY_MS = 120
 const MAX_RETRIES = 25
 
 interface Feature {
   geometry: { coordinates: number[][], type: string }
-  properties: { color: string, groupId: string }
+  properties: { color: string, groupId: string, role: string }
   type: string
 }
 
@@ -43,8 +45,12 @@ describe('RouteLineLayer', () => {
     return map.sourceData(SOURCE_ID) as FeatureCollection
   }
 
-  function makeLayer(): RouteLineLayer {
-    return new RouteLineLayer(() => currentMap)
+  function featuresWithRole(role: string): Feature[] {
+    return drawnData().features.filter((feature) => feature.properties.role === role)
+  }
+
+  function makeLayer(dark = true): RouteLineLayer {
+    return new RouteLineLayer(() => currentMap, () => dark)
   }
 
   beforeEach(() => {
@@ -110,15 +116,48 @@ describe('RouteLineLayer', () => {
 
     // `line-dasharray` is in multiples of the line width, so the wider casing needs
     // its own numbers to dash in step with the colored line on top of it.
-    it('keeps the casing dashes in step with the line they sit under', () => {
+    // The casing is an outline: it has to stick out past the colored line on every
+    // side, so its dashes are both wider and longer, and one dash period still matches
+    // so the two stay in step.
+    it('wraps each dash of the line in its casing', () => {
       makeLayer().render([makeRoute()], 1)
       const inPixels = (layerId: string): number[] => {
         const paint = map.layers.get(layerId)?.paint ?? {}
 
         return (paint['line-dasharray'] as number[]).map((part) => part * (paint['line-width'] as number))
       }
-      expect(inPixels(CASING_LAYER)[0]).toBeCloseTo(inPixels(LINE_LAYER)[0], 10)
-      expect(inPixels(CASING_LAYER)[1]).toBeCloseTo(inPixels(LINE_LAYER)[1], 10)
+      const casing = inPixels(CASING_LAYER)
+      const line = inPixels(LINE_LAYER)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-width'])
+        .toBeGreaterThan(map.layers.get(LINE_LAYER)?.paint['line-width'] as number)
+      expect(casing[0]).toBeGreaterThan(line[0])
+      expect(casing[0] + casing[1]).toBeCloseTo(line[0] + line[1], 10)
+    })
+
+    // Which way the outline contrasts depends on the map under it, not on the line
+    // color — a dark outline on a dark map would be no outline at all.
+    it('outlines against the theme the game is showing', () => {
+      makeLayer(true).render([makeRoute()], 1)
+      const onDark = map.layers.get(CASING_LAYER)?.paint['line-color']
+      map = createFakeGlMap()
+      currentMap = map
+      makeLayer(false).render([makeRoute()], 1)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-color']).not.toBe(onDark)
+    })
+
+    it('re-colours an existing casing when the theme changes', () => {
+      const dark = makeLayer(true)
+      dark.render([makeRoute()], 1)
+      const onDark = map.layers.get(CASING_LAYER)?.paint['line-color']
+      new RouteLineLayer(() => currentMap, () => false).render([makeRoute()], 1)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-color']).not.toBe(onDark)
+    })
+
+    it('outlines the platforms too, solid rather than dashed', () => {
+      makeLayer().render([makeRoute()], 1)
+      expect(map.layers.get(PLATFORM_CASING_LAYER)?.paint['line-dasharray']).toBeUndefined()
+      expect(map.layers.get(PLATFORM_CASING_LAYER)?.paint['line-width'])
+        .toBeGreaterThan(map.layers.get(PLATFORM_LAYER)?.paint['line-width'] as number)
     })
 
     it('updates the existing source instead of adding it twice', () => {
@@ -127,7 +166,7 @@ describe('RouteLineLayer', () => {
       layer.render([makeRoute(), makeRoute({ groupId: 'line-2' })], 1)
       expect(map.addSource).toHaveBeenCalledTimes(1)
       expect(map.sources.get(SOURCE_ID)?.setData).toHaveBeenCalledTimes(1)
-      expect(drawnData().features).toHaveLength(2)
+      expect(featuresWithRole('line')).toHaveLength(2)
     })
 
     it('leaves the layers alone when they already exist', () => {
@@ -145,7 +184,7 @@ describe('RouteLineLayer', () => {
       layer.render([makeRoute()], 1)
       map.setPaintProperty.mockClear()
       layer.render([makeRoute()], 0.5)
-      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.275, 10)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.225, 10)
       expect(map.layers.get(LINE_LAYER)?.paint['line-opacity']).toBeCloseTo(0.45, 10)
       expect(map.setPaintProperty).toHaveBeenCalledWith(LINE_LAYER, 'line-dasharray', expect.any(Array))
     })
@@ -154,19 +193,30 @@ describe('RouteLineLayer', () => {
   describe('the geometry it builds', () => {
     it('draws one line feature per route, tagged with its folder', () => {
       makeLayer().render([makeRoute(), makeRoute({ color: '#22c55e', groupId: 'line-2' })], 1)
-      const features = drawnData().features
-      expect(features.map((feature) => feature.properties.groupId)).toEqual(['line-1', 'line-2'])
-      expect(features.map((feature) => feature.properties.color)).toEqual(['#ef4444', '#22c55e'])
-      expect(features[0].geometry.type).toBe('LineString')
+      const lines = featuresWithRole('line')
+      expect(lines.map((feature) => feature.properties.groupId)).toEqual(['line-1', 'line-2'])
+      expect(lines.map((feature) => feature.properties.color)).toEqual(['#ef4444', '#22c55e'])
+      expect(lines[0].geometry.type).toBe('LineString')
+    })
+
+    // A station is a stretch of straight track, not a point, so each one is drawn.
+    it('draws a platform per station, in the route s own color', () => {
+      const route = makeRoute()
+      makeLayer().render([route], 1)
+      const platforms = featuresWithRole('platform')
+      expect(platforms).toHaveLength(route.points.length)
+      expect(platforms.every((feature) => feature.geometry.coordinates.length === 2)).toBe(true)
+      expect(platforms.every((feature) => feature.properties.color === route.color)).toBe(true)
+      expect(platforms.every((feature) => feature.properties.groupId === route.groupId)).toBe(true)
     })
 
     // The renderer joins vertices with straight segments, so the curve has to be in
     // the geometry: the drawn line carries far more points than the route's markers.
-    it('draws the smooth curve through the markers, not the bare polyline', () => {
+    it('draws the platforms and the curve between them, not the bare polyline', () => {
       const route = makeRoute()
       makeLayer().render([route], 1)
-      const drawn = drawnData().features[0].geometry.coordinates
-      expect(drawn).toEqual(smoothPath(route.points))
+      const drawn = featuresWithRole('line')[0].geometry.coordinates
+      expect(drawn).toEqual(stationPath(route.points).path)
       expect(drawn.length).toBeGreaterThan(route.points.length)
     })
 
@@ -175,7 +225,7 @@ describe('RouteLineLayer', () => {
       layer.render([makeRoute()], 1)
       const moved = makeRoute({ points: [[10, 20], [11, 21], [12, 20]] })
       layer.render([moved], 1)
-      expect(drawnData().features[0].geometry.coordinates).toEqual(smoothPath(moved.points))
+      expect(featuresWithRole('line')[0].geometry.coordinates).toEqual(stationPath(moved.points).path)
     })
 
     // How the setting turning off — or every folder being hidden — reaches the map.
@@ -194,16 +244,18 @@ describe('RouteLineLayer', () => {
   })
 
   describe('fading with the panel', () => {
-    it('keeps both layers at full weight while the panel is open', () => {
+    it('keeps every layer at full weight while the panel is open', () => {
       makeLayer().render([makeRoute()], 1)
-      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.55, 10)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.45, 10)
       expect(map.layers.get(LINE_LAYER)?.paint['line-opacity']).toBeCloseTo(0.9, 10)
+      expect(map.layers.get(PLATFORM_LAYER)?.paint['line-opacity']).toBeCloseTo(0.95, 10)
     })
 
-    it('scales both layer opacities by the requested overlay opacity', () => {
+    it('scales every layer opacity by the requested overlay opacity', () => {
       makeLayer().render([makeRoute()], 0.5)
-      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.275, 10)
+      expect(map.layers.get(CASING_LAYER)?.paint['line-opacity']).toBeCloseTo(0.225, 10)
       expect(map.layers.get(LINE_LAYER)?.paint['line-opacity']).toBeCloseTo(0.45, 10)
+      expect(map.layers.get(PLATFORM_LAYER)?.paint['line-opacity']).toBeCloseTo(0.475, 10)
     })
   })
 

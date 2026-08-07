@@ -41,6 +41,15 @@ map alike.
 **Move one** — drag its badge on the map. The map won't pan while you drag, and the
 influence circle follows in real time.
 
+**Find one** — click its badge on the map and the panel takes you to it: the folder
+holding it unfolds, the card scrolls into view and opens on its settings. A card shows
+its name until then — the color, icon and folder controls are behind the **⌄** button,
+so a board of hundreds stays scrollable.
+
+Zoomed far out the badges step aside (names first, then the badges themselves) so they
+can't pile into an unreadable clump; the folder lines stay, which is what an overview
+is for.
+
 **Put one marker on several lines** — a station where lines meet belongs to each of
 them. The card lists the folders it is on, with a picker to add another and an **✕** on
 each to take it off that one; every line it is on runs through it. Dragging a card
@@ -63,9 +72,11 @@ Global display settings, applied to every marker:
   the markers read as a background sketch. 100% disables the fade.
 - **Show influence area** — the radius circle around each marker.
 - **Show line paths** — joins the markers of each folder, in the order the panel lists
-  them, with a smooth dashed curve: the line to follow when you lay the track. Dashed,
-  so it never reads as track you already built. Markers outside a folder stay
-  unconnected, and hiding a folder takes its line down with it.
+  them: a straight platform at every station and a smooth dashed curve between them —
+  the line to follow when you lay the track. Dashed, so it never reads as track you
+  already built, and outlined so it stays readable on a dark or a light map whatever
+  color the line is. Markers outside a folder stay unconnected, and hiding a folder
+  takes its line down with it.
 - **Show spacing guides** — a ring at the ideal distance (√3·R) from each marker.
   Put a neighbor on that ring and two catchments meet with the least overlap that
   still leaves no gap.
@@ -85,9 +96,11 @@ across sessions. Settings are global. Everything persists in `localStorage`.
   move — the same technique the map library's own markers use.
 - **Geodesic circles** for the influence radius (a GeoJSON polygon per marker), so
   1 km is 1 km on the ground rather than a fixed number of screen pixels.
-- **Centripetal Catmull-Rom curves** for the folder lines: the curve passes through
-  every marker, bends without kinks across the whole path, and is fitted on a local
-  plane so it isn't stretched east-west away from the equator.
+- **Platforms, then curves** for the folder lines: a station reserves the 229 m of
+  straight track the game's own platform occupies, aligned with the way the line
+  travels, and the gaps between them are cubic Hermite curves that leave and enter each
+  platform along its own direction — so there is no kink where a curve meets a station.
+  Fitted on a local plane, so nothing is stretched east-west away from the equator.
 - **Nearest-neighbor + 2-opt** behind the folder sort: the shortest path through every
   marker is the travelling salesman, so it's a greedy walk from each candidate start
   followed by the reversals that undo the crossings that walk leaves behind.

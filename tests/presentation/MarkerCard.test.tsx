@@ -44,6 +44,10 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = scrollIntoView
 })
 
+function openSettings(): void {
+  fireEvent.click(screen.getByRole('button', { name: 'Show marker settings' }))
+}
+
 describe('MarkerCard', () => {
   it('shows the marker name in the editable label', () => {
     renderCard()
@@ -174,14 +178,53 @@ describe('MarkerCard', () => {
 
   it('reports a recoloured marker through onUpdate', () => {
     const { onUpdate } = renderCard()
+    openSettings()
     fireEvent.click(screen.getByRole('button', { name: 'Choose color #22c55e' }))
     expect(onUpdate).toHaveBeenCalledWith({ color: '#22c55e' })
   })
 
   it('reports a new icon through onUpdate', () => {
     const { onUpdate } = renderCard()
+    openSettings()
     fireEvent.click(screen.getByRole('button', { name: 'Highlight' }))
     expect(onUpdate).toHaveBeenCalledWith({ icon: 'star' })
+  })
+})
+
+// On a board of hundreds of markers the pickers push every other card off the screen,
+// so a card shows its name until its settings are asked for.
+describe('MarkerCard settings toggle', () => {
+  it('keeps the color and icon pickers out of the way to begin with', () => {
+    renderCard()
+    expect(screen.queryByRole('button', { name: 'Choose color #22c55e' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Highlight' })).toBeNull()
+  })
+
+  it('shows them when asked', () => {
+    renderCard()
+    openSettings()
+    expect(screen.getByRole('button', { name: 'Choose color #22c55e' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Hide marker settings' })).toBeDefined()
+  })
+
+  it('hides them again', () => {
+    renderCard()
+    openSettings()
+    fireEvent.click(screen.getByRole('button', { name: 'Hide marker settings' }))
+    expect(screen.queryByRole('button', { name: 'Choose color #22c55e' })).toBeNull()
+  })
+
+  // Clicking a badge on the map selects its card; landing on the marker's settings is
+  // the point of going there.
+  it('opens with the card that gets selected', () => {
+    renderCard({ selected: true })
+    expect(screen.getByRole('button', { name: 'Choose color #22c55e' })).toBeDefined()
+  })
+
+  it('still closes on a card that is selected', () => {
+    renderCard({ selected: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Hide marker settings' }))
+    expect(screen.queryByRole('button', { name: 'Choose color #22c55e' })).toBeNull()
   })
 })
 
@@ -209,11 +252,14 @@ describe('MarkerCard folders', () => {
       />,
     )
 
+    openSettings()
+
     return { onAddToGroup, onRemoveFromGroup }
   }
 
   it('offers no folder controls when there are no folders', () => {
     renderCard()
+    openSettings()
     expect(screen.queryByLabelText('Add to folder')).toBeNull()
   })
 

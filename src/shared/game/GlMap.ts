@@ -15,6 +15,7 @@ export interface GlMap {
   getContainer(): HTMLElement
   getLayer(id: string): unknown
   getSource(id: string): undefined | { setData(data: unknown): void }
+  getZoom(): number
   isStyleLoaded(): boolean
   off(type: string, listener: (event: MapMouseEvent) => void): void
   on(type: string, listener: (event: MapMouseEvent) => void): void

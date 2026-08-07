@@ -218,6 +218,63 @@ describe('MarkerStore folders', () => {
     expect(saved[0].collapsed).toBe(true)
   })
 
+  // Clicking a badge on the map has to land on that marker's card in the panel, which
+  // means the folder holding it can't stay folded.
+  describe('reveal', () => {
+    it('selects the marker and unfolds the folder holding it', () => {
+      const { store } = createFixture()
+      const group = store.addGroup('Line 1')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, group.id)
+      store.setGroupCollapsed(group.id, true)
+      store.select(null)
+
+      store.reveal(marker.id)
+
+      expect(store.selected()).toBe(marker.id)
+      expect(store.groups()[0].collapsed).toBe(false)
+    })
+
+    it('leaves an already open folder alone', () => {
+      const { store } = createFixture()
+      const group = store.addGroup('Line 1')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, group.id)
+      store.select(null)
+      const listener = vi.fn()
+      store.subscribe(listener)
+
+      store.reveal(marker.id)
+
+      expect(listener).toHaveBeenCalledTimes(1) // the selection, nothing else
+    })
+
+    // An interchange is on several lines; unfolding all of them would bury the card
+    // that was asked for under the other folders.
+    it('unfolds only the first folder of a marker on several lines', () => {
+      const { store } = createFixture()
+      const one = store.addGroup('Line 1')
+      const two = store.addGroup('Line 2')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, one.id)
+      store.addToGroup(marker.id, two.id)
+      store.setGroupCollapsed(one.id, true)
+      store.setGroupCollapsed(two.id, true)
+
+      store.reveal(marker.id)
+
+      expect(store.groups().map((group) => group.collapsed)).toEqual([false, true])
+    })
+
+    it('still selects a marker no folder holds', () => {
+      const { store } = createFixture()
+      const marker = store.add([0, 0])
+      store.select(null)
+      store.reveal(marker.id)
+      expect(store.selected()).toBe(marker.id)
+    })
+  })
+
   describe('sortGroupAlongPath', () => {
     // A folder's marker order is the order the line is drawn in, so a folder filled in
     // some other order (alphabetically, say) draws a line that criss-crosses the city.

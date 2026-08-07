@@ -20,7 +20,7 @@ import { createFakeGlMap, MAP_RECT_LEFT, MAP_RECT_TOP } from './fakeGlMap'
 
 interface RouteFeature {
   geometry: { coordinates: [number, number][], type: string }
-  properties: { color: string, groupId: string }
+  properties: { color: string, groupId: string, role: string }
 }
 
 function badgeRootsOf(map: FakeGlMap): HTMLElement[] {
@@ -87,10 +87,17 @@ describe('MapMarkersController', () => {
     return group
   }
 
+  // The lines themselves; each station also draws a platform of its own.
   function routeFeatures(): RouteFeature[] {
     const data = map.sourceData('sbmm-route') as undefined | { features: RouteFeature[] }
 
-    return data?.features ?? []
+    return (data?.features ?? []).filter((feature) => feature.properties.role === 'line')
+  }
+
+  function platformFeatures(): RouteFeature[] {
+    const data = map.sourceData('sbmm-route') as undefined | { features: RouteFeature[] }
+
+    return (data?.features ?? []).filter((feature) => feature.properties.role === 'platform')
   }
 
   beforeEach(() => {
@@ -473,15 +480,88 @@ describe('MapMarkersController', () => {
     })
   })
 
+  // Zoomed out, a fixed-size badge per station piles into an unreadable clump; the
+  // folder lines are what an overview needs, and they stay.
+  describe('zooming out', () => {
+    it('draws the badges at street zoom', () => {
+      store.add([1, 2])
+      controller.start()
+      expect(overlayOf(map).style.display).toBe('')
+    })
+
+    it('takes the badges off the map once it is zoomed far out', () => {
+      store.add([1, 2])
+      controller.start()
+      map.zoom = 9
+      map.emit('move')
+      expect(overlayOf(map).style.display).toBe('none')
+    })
+
+    it('brings them back on the way in', () => {
+      store.add([1, 2])
+      controller.start()
+      map.zoom = 9
+      map.emit('move')
+      map.zoom = 14
+      map.emit('move')
+      expect(overlayOf(map).style.display).toBe('')
+    })
+
+    // Names are the wider of the two, so they go first — the badges alone still read.
+    it('drops the names one zoom step before the badges', () => {
+      const marker = store.add([1, 2])
+      store.update(marker.id, { label: 'Sé' })
+      controller.start()
+      map.zoom = 11.5
+      map.emit('move')
+      expect(overlayOf(map).style.display).toBe('')
+      expect((badgeRootsOf(map)[0].children[1] as HTMLElement).style.display).toBe('none')
+    })
+
+    it('keeps the folder line while the badges are gone', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4]])
+      controller.start()
+      map.zoom = 9
+      map.emit('move')
+      expect(routeFeatures()).toHaveLength(1)
+    })
+  })
+
+  describe('clicking a badge', () => {
+    // The panel is where a marker is edited, so clicking it on the map has to land on
+    // its card — which means unfolding the folder holding it.
+    it('selects the marker and unfolds the folder holding it', () => {
+      const group = fillFolder('Line 1', [[1, 2], [3, 4]])
+      store.setGroupCollapsed(group.id, true)
+      controller.start()
+      controller.setPanelOpen(true) // badges only take clicks while the panel is open
+      store.select(null)
+      const badge = badgeRootsOf(map)[0].children[0] as HTMLElement
+      badge.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+      window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }))
+      expect(store.selected()).toBe(store.all()[0].id)
+      expect(store.groups()[0].collapsed).toBe(false)
+    })
+  })
+
   describe('drawing the folder route', () => {
     it('joins the markers of a folder in panel order', () => {
       fillFolder('Line 1', [[1, 2], [3, 4], [5, 6]])
       controller.start()
       const drawn = routeFeatures()[0].geometry.coordinates
-      expect(drawn[0]).toEqual([1, 2])
-      expect(drawn[drawn.length - 1]).toEqual([5, 6])
-      // Curved, so it carries far more points than the three markers it passes through.
+      // The line starts and ends at the ends of the first and last platforms, so it
+      // runs past the markers rather than stopping on them.
+      expect(drawn[0][0]).toBeLessThan(1)
+      expect(drawn[drawn.length - 1][0]).toBeGreaterThan(5)
+      // Curved, so it carries far more points than the three markers it runs through.
       expect(drawn.length).toBeGreaterThan(3)
+    })
+
+    // A station is a stretch of straight track, not a point on the line.
+    it('draws a platform for every station of the folder', () => {
+      fillFolder('Line 1', [[1, 2], [3, 4], [5, 6]])
+      controller.start()
+      expect(platformFeatures()).toHaveLength(3)
     })
 
     it('redraws the line as a marker is dragged', () => {
@@ -489,7 +569,8 @@ describe('MapMarkersController', () => {
       controller.start()
       store.update(store.all()[1].id, { position: [9, 9] })
       const drawn = routeFeatures()[0].geometry.coordinates
-      expect(drawn[drawn.length - 1]).toEqual([9, 9])
+      expect(drawn[drawn.length - 1][0]).toBeGreaterThan(8.9)
+      expect(drawn[drawn.length - 1][1]).toBeGreaterThan(8.9)
       expect(routeFeatures()[0].properties.groupId).toBe(group.id)
     })
 

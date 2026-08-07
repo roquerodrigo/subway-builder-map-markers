@@ -237,6 +237,18 @@ export class MarkerStore {
     this.inheritsCityCache = true
   }
 
+  // Select a marker and make sure the panel can actually show it: a folder holding it
+  // is expanded, so the card exists to be scrolled to. Used by the map, where clicking
+  // a badge should take you to that station in the list. Only the first folder opens —
+  // an interchange would otherwise unfold every line it is on.
+  reveal(id: string): void {
+    const holder = this.groupList.find((group) => group.markerIds.includes(id))
+    if (holder?.collapsed) {
+      this.setGroupCollapsed(holder.id, false)
+    }
+    this.select(id)
+  }
+
   select(id: null | string): void {
     if (this.selectedId === id) {
       return

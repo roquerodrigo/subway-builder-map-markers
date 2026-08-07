@@ -14,6 +14,12 @@ const Z_INTERACTIVE = '10'
 // z-index while idle (panel closed): below the game markers, so the badges are a
 // pure visual overlay that doesn't sit over — or steal clicks from — the map.
 const Z_IDLE = '3'
+// Zoomed out, the badges are bigger than the ground they stand on: a whole line's
+// worth of them collides into an unreadable clump that hides the map. They are a
+// fixed screen size, so the only fix is to stop drawing them — the folder lines stay,
+// and those are what the overview is for. Names go first, being the wider of the two.
+const MIN_LABEL_ZOOM = 12.5
+const MIN_BADGE_ZOOM = 10.5
 
 export interface MarkerLayerCallbacks {
   onClick(id: string): void
@@ -52,10 +58,12 @@ interface MarkerElement {
 // while the player is editing the map.
 export class MarkerLayer {
   private attachedMap: GlMap | null = null
+  private badgesVisible = true
   private container: HTMLElement | null = null
   private draggingId: null | string = null
   private elements = new Map<string, MarkerElement>()
   private interactive = false
+  private labelsVisible = true
   private markers: Marker[] = []
   private opacity = 1
   private selectedId: null | string = null
@@ -76,6 +84,7 @@ export class MarkerLayer {
     }
     this.attach(map)
     this.applyOpacity()
+    this.applyZoomVisibility(map)
     this.reconcile()
   }
 
@@ -102,6 +111,23 @@ export class MarkerLayer {
   private applyOpacity(): void {
     if (this.container) {
       this.container.style.opacity = String(this.opacity)
+    }
+  }
+
+  // Hide the badges (and, earlier, their names) once the map is zoomed far enough out
+  // that they would pile on top of each other. Re-applied on every map move, since
+  // that is what a zoom is.
+  private applyZoomVisibility(map: GlMap): void {
+    let zoom = Infinity
+    try {
+      zoom = map.getZoom()
+    } catch {
+      /* an instance that can't say — draw everything rather than nothing */
+    }
+    this.badgesVisible = zoom >= MIN_BADGE_ZOOM
+    this.labelsVisible = zoom >= MIN_LABEL_ZOOM
+    if (this.container) {
+      this.container.style.display = this.badgesVisible ? '' : 'none'
     }
   }
 
@@ -307,7 +333,21 @@ export class MarkerLayer {
     }
   }
 
-  private reposition = (): void => this.repositionAll()
+  // A zoom is a move, so this is also where the badges drop out (and come back) as the
+  // map is zoomed past the thresholds.
+  private reposition = (): void => {
+    const map = this.attachedMap
+    if (map) {
+      const showedLabels = this.labelsVisible
+      this.applyZoomVisibility(map)
+      if (showedLabels !== this.labelsVisible) {
+        this.reconcile()
+      }
+    }
+    if (this.badgesVisible) {
+      this.repositionAll()
+    }
+  }
 
   private repositionAll(): void {
     for (const marker of this.markers) {
@@ -332,6 +372,6 @@ export class MarkerLayer {
     element.badge.innerHTML = iconSvgMarkup(markerIcon(marker.icon), '#ffffff', 18)
     const text = marker.label.trim()
     element.label.textContent = text
-    element.label.style.display = this.showLabels && text ? 'block' : 'none'
+    element.label.style.display = this.showLabels && this.labelsVisible && text ? 'block' : 'none'
   }
 }

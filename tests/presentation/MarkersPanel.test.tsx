@@ -350,6 +350,7 @@ describe('MarkersPanel folders', () => {
 
   it('takes a marker off a folder from its card', () => {
     const { store } = renderPanel([grouped('a', 'Central')], [line1])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show marker settings' })[0])
     fireEvent.click(screen.getByRole('button', { name: 'Take off Line 1' }))
     expect(store.removeFromGroup).toHaveBeenCalledWith('a', 'g1')
   })
@@ -359,6 +360,7 @@ describe('MarkersPanel folders', () => {
   it('puts a marker on a second folder from its card', () => {
     const line2: MarkerGroup = { collapsed: false, color: null, hidden: false, id: 'g2', markerIds: [], name: 'Line 2' }
     const { store } = renderPanel([grouped('a', 'Central')], [line1, line2])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Show marker settings' })[0])
     fireEvent.change(screen.getAllByLabelText('Add to folder')[0], { target: { value: 'g2' } })
     expect(store.addToGroup).toHaveBeenCalledWith('a', 'g2')
   })
