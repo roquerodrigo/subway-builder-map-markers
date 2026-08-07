@@ -1,5 +1,6 @@
 import type { MarkerStore } from '@/application/MarkerStore'
 import type { SettingsStore } from '@/application/SettingsStore'
+import type { MarkerRoute } from '@/domain/route/MarkerRoute'
 import type { Coordinate } from '@/shared/game/Coordinate'
 import type { GlMap, MapMouseEvent } from '@/shared/game/GlMap'
 import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
@@ -7,9 +8,15 @@ import type { SubwayBuilderApi } from '@/shared/game/SubwayBuilderApi'
 import { OPTIMAL_SPACING_FACTOR } from '@/domain/marker/Marker'
 import { snapToSpacing } from '@/domain/marker/SpacingSnap'
 import { markerRoutes } from '@/domain/route/MarkerRoute'
+import { routeUnderPoint } from '@/domain/route/RouteHitTest'
 import { InfluenceRadiusLayer } from '@/infrastructure/map/InfluenceRadiusLayer'
 import { MarkerLayer } from '@/infrastructure/map/MarkerLayer'
+import { PLACEMENT_CURSOR } from '@/infrastructure/map/placementCursor'
+import { RouteDragInteraction } from '@/infrastructure/map/RouteDragInteraction'
 import { RouteLineLayer } from '@/infrastructure/map/RouteLineLayer'
+
+// How close a dropped marker has to land to a line, in screen pixels, to join it.
+const ON_THE_LINE_PX = 14
 
 type PlacementListener = (active: boolean) => void
 
@@ -27,6 +34,7 @@ export class MapMarkersController {
   private placementActive = false
   private placementListeners = new Set<PlacementListener>()
   private radiusLayer: InfluenceRadiusLayer
+  private routeDrag: RouteDragInteraction
   private routeLayer: RouteLineLayer
 
   constructor(
@@ -47,6 +55,15 @@ export class MapMarkersController {
       snapPosition: (id, candidate) => this.snapToNeighbors(id, candidate),
     })
     this.radiusLayer = new InfluenceRadiusLayer(getMap)
+    // Dragging a line onto a marker puts that marker on the line.
+    this.routeDrag = new RouteDragInteraction(getMap, {
+      markers: () => this.store.visibleMarkers(),
+      onAttach: (markerId, groupId) => {
+        this.store.addToGroup(markerId, groupId)
+        this.store.reveal(markerId)
+      },
+      routes: () => this.shownRoutes(),
+    })
     // The route outline contrasts with the map, so it follows the theme the game is
     // showing rather than a fixed color. Read per draw: the player can switch it while
     // the mod is loaded.
@@ -98,6 +115,7 @@ export class MapMarkersController {
     }
     this.panelOpen = open
     this.markerLayer.setInteractive(open)
+    this.routeDrag.setEnabled(open)
     this.renderLayers()
   }
 
@@ -111,6 +129,7 @@ export class MapMarkersController {
   // markers themselves are (re)loaded from the save by the store's own lifecycle
   // wiring, not here.
   syncToMap(): void {
+    this.routeDrag.syncToMap()
     this.renderLayers()
   }
 
@@ -132,7 +151,14 @@ export class MapMarkersController {
       this.pendingPlacement = null
       this.placementActive = false
       this.notifyPlacement()
-      this.store.add([event.lngLat.lng, event.lngLat.lat])
+      const position: Coordinate = [event.lngLat.lng, event.lngLat.lat]
+      const marker = this.store.add(position)
+      // Dropped on a line the player can see: that is where they meant to put a stop,
+      // so it joins that folder (at the point of the line it was dropped on).
+      const line = this.lineUnder(position)
+      if (line) {
+        this.store.addToGroup(marker.id, line)
+      }
     }
     this.pendingPlacement = { handler, map }
     map.once('click', handler)
@@ -149,6 +175,19 @@ export class MapMarkersController {
     }
   }
 
+  // The folder whose line passes under `position`, within a few pixels of it.
+  private lineUnder(position: Coordinate): null | string {
+    const map = this.map()
+    if (!map || !this.settings.get().showRouteLines) {
+      return null
+    }
+    const point = map.project(position)
+    const offset = map.unproject([point.x + ON_THE_LINE_PX, point.y])
+    const within = Math.abs(offset.lng - position[0]) * Math.cos((position[1] * Math.PI) / 180)
+
+    return routeUnderPoint(this.shownRoutes(), position, within)?.groupId ?? null
+  }
+
   private map(): GlMap | null {
     return (this.api.utils?.getMap?.() ?? null) as GlMap | null
   }
@@ -157,7 +196,7 @@ export class MapMarkersController {
     try {
       const container = this.map()?.getCanvasContainer()
       if (container) {
-        container.style.cursor = this.placementActive ? 'crosshair' : ''
+        container.style.cursor = this.placementActive ? PLACEMENT_CURSOR : ''
       }
     } catch {
       /* cursor hint is best-effort */
@@ -179,8 +218,13 @@ export class MapMarkersController {
     // Drawn after the circles so the route reads on top of them. Only the folders that
     // are shown draw a line, but each of those lines is resolved against the whole
     // board: a marker it shares with a hidden folder is still on it.
-    const shownGroups = this.store.groups().filter((group) => !group.hidden)
-    this.routeLayer.render(settings.showRouteLines ? markerRoutes(this.store.all(), shownGroups) : [], opacity)
+    this.routeLayer.render(settings.showRouteLines ? this.shownRoutes() : [], opacity)
+  }
+
+  // The lines currently on the map: one per folder that is shown, resolved against the
+  // whole board (a marker it shares with a hidden folder is still on it).
+  private shownRoutes(): MarkerRoute[] {
+    return markerRoutes(this.store.all(), this.store.groups().filter((group) => !group.hidden))
   }
 
   // Magnetic placement aid: pull a dragged marker onto the ideal spacing (√3·R) from

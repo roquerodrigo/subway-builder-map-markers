@@ -20,7 +20,14 @@ mirror of the first folder holding a marker (so an older build still opens the b
 and read only to migrate a folder that carries no sequence yet
 (`domain/group/LegacyGroupLink`). Dragging a card **moves** it between folders; the
 card's folder chips are what put one marker on a second line. A marker leaves the map
-only when *every* folder holding it is hidden. A folder's markers are
+only when *every* folder holding it is hidden.
+
+Joining a folder puts a marker where it **lengthens that line least** (cheapest
+insertion, `insertionIndexFor`), never at the end — a stop belongs between two others.
+Three routes lead there: the card's picker, dropping a new marker **on a line** while
+placing it, and **dragging a line onto a marker**. The last two hit-test against the
+line *as drawn* (`routeUnderPoint` over `stationPath`), with the tolerance converted
+from screen pixels at the current zoom, because pixels are what the player aims with. A folder's markers are
 also joined by a **dashed guide line** (`showRouteLines`, on by default): a straight
 **platform** at every station — 229 m, measured off the game's own `platformMapItems` —
 and cubic Hermite curves between them that leave and enter each platform along its own
