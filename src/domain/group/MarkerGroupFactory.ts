@@ -11,6 +11,7 @@ export function createGroup(name: string, color: null | string = null): MarkerGr
     color,
     hidden: false,
     id: newId(),
+    markerIds: [],
     name,
   }
 }

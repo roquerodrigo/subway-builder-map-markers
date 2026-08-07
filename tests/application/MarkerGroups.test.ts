@@ -47,31 +47,90 @@ describe('MarkerStore folders', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
-  it('moves a marker into a folder', () => {
+  it('puts a marker on a folder s line, at the end of it', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const first = store.add([0, 0])
+    const second = store.add([1, 1])
+    store.addToGroup(first.id, group.id)
+    store.addToGroup(second.id, group.id)
+    expect(store.groups()[0].markerIds).toEqual([first.id, second.id])
+  })
+
+  // An interchange is on every line that stops there.
+  it('keeps a marker on every folder it was added to', () => {
+    const { store } = createFixture()
+    const one = store.addGroup('Line 1')
+    const two = store.addGroup('Line 2')
+    const marker = store.add([0, 0])
+    store.addToGroup(marker.id, one.id)
+    store.addToGroup(marker.id, two.id)
+    expect(store.groups().map((group) => group.markerIds)).toEqual([[marker.id], [marker.id]])
+  })
+
+  it('takes a marker off one folder s line, leaving the others', () => {
+    const { store } = createFixture()
+    const one = store.addGroup('Line 1')
+    const two = store.addGroup('Line 2')
+    const marker = store.add([0, 0])
+    store.addToGroup(marker.id, one.id)
+    store.addToGroup(marker.id, two.id)
+    store.removeFromGroup(marker.id, one.id)
+    expect(store.groups().map((group) => group.markerIds)).toEqual([[], [marker.id]])
+    expect(store.all()).toHaveLength(1)
+  })
+
+  it('ignores adding a marker twice to the same folder', () => {
     const { store } = createFixture()
     const group = store.addGroup('Line 1')
     const marker = store.add([0, 0])
-    store.assignToGroup(marker.id, group.id)
-    expect(store.all()[0].groupId).toBe(group.id)
+    store.addToGroup(marker.id, group.id)
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.addToGroup(marker.id, group.id)
+    expect(store.groups()[0].markerIds).toEqual([marker.id])
+    expect(listener).not.toHaveBeenCalled()
   })
 
-  it('moves a marker back out of every folder', () => {
-    const { store } = createFixture()
-    const group = store.addGroup('Line 1')
-    const marker = store.add([0, 0])
-    store.assignToGroup(marker.id, group.id)
-    store.assignToGroup(marker.id, null)
-    expect(store.all()[0].groupId).toBeNull()
-  })
-
-  it('ignores an assignment to a folder that does not exist', () => {
+  it('ignores adding to a folder that does not exist', () => {
     const { store } = createFixture()
     const marker = store.add([0, 0])
     const listener = vi.fn()
     store.subscribe(listener)
-    store.assignToGroup(marker.id, 'no-such-folder')
-    expect(store.all()[0].groupId).toBeUndefined()
+    store.addToGroup(marker.id, 'no-such-folder')
     expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('ignores adding a marker that is not on the board', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.addToGroup('no-such-marker', group.id)
+    expect(store.groups()[0].markerIds).toEqual([])
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('ignores taking a marker off a folder that does not hold it', () => {
+    const { store } = createFixture()
+    const group = store.addGroup('Line 1')
+    const marker = store.add([0, 0])
+    const listener = vi.fn()
+    store.subscribe(listener)
+    store.removeFromGroup(marker.id, group.id)
+    store.removeFromGroup(marker.id, 'no-such-folder')
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('takes a removed marker off every line it was on', () => {
+    const { store } = createFixture()
+    const one = store.addGroup('Line 1')
+    const two = store.addGroup('Line 2')
+    const marker = store.add([0, 0])
+    store.addToGroup(marker.id, one.id)
+    store.addToGroup(marker.id, two.id)
+    store.remove(marker.id)
+    expect(store.groups().map((group) => group.markerIds)).toEqual([[], []])
   })
 
   it('renames a folder', () => {
@@ -95,11 +154,10 @@ describe('MarkerStore folders', () => {
     const { store } = createFixture()
     const group = store.addGroup('Line 1')
     const marker = store.add([0, 0])
-    store.assignToGroup(marker.id, group.id)
+    store.addToGroup(marker.id, group.id)
     store.removeGroup(group.id)
     expect(store.groups()).toEqual([])
     expect(store.all()).toHaveLength(1)
-    expect(store.all()[0].groupId).toBeNull()
   })
 
   it('ignores removing a folder it does not know', () => {
@@ -160,69 +218,40 @@ describe('MarkerStore folders', () => {
     expect(saved[0].collapsed).toBe(true)
   })
 
-  describe('visibleMarkers', () => {
-    it('returns every marker when no folder is hidden', () => {
-      const { store } = createFixture()
-      const group = store.addGroup('Line 1')
-      const marker = store.add([0, 0])
-      store.assignToGroup(marker.id, group.id)
-      expect(store.visibleMarkers()).toHaveLength(1)
-    })
-
-    it('drops the markers of a hidden folder but keeps ungrouped ones', () => {
-      const { store } = createFixture()
-      const group = store.addGroup('Line 1')
-      const inFolder = store.add([0, 0])
-      store.assignToGroup(inFolder.id, group.id)
-      const loose = store.add([1, 1])
-      store.setGroupHidden(group.id, true)
-      const visible = store.visibleMarkers()
-      expect(visible.map((marker) => marker.id)).toEqual([loose.id])
-    })
-
-    it('keeps a marker whose folder no longer exists visible even when another is hidden', () => {
-      const { store } = createFixture()
-      const hiddenGroup = store.addGroup('hidden')
-      const inHidden = store.add([0, 0])
-      store.assignToGroup(inHidden.id, hiddenGroup.id)
-      const dangling = store.add([1, 1])
-      store.update(dangling.id, { groupId: 'gone' })
-      store.setGroupHidden(hiddenGroup.id, true)
-      expect(store.visibleMarkers().map((marker) => marker.id)).toEqual([dangling.id])
-    })
-  })
-
-  it('drops every folder when a brand-new game starts', () => {
-    const { store } = createFixture()
-    store.addGroup('Line 1')
-    store.startNewGame()
-    expect(store.groups()).toEqual([])
-  })
-
   describe('sortGroupAlongPath', () => {
-    // Marker order is the order the line is drawn in, so a folder filled in some other
-    // order (alphabetically, say) draws a line that criss-crosses the city.
-    function labelsOf(store: MarkerStore, groupId: string): string[] {
-      return store.all().filter((marker) => marker.groupId === groupId).map((marker) => marker.label)
-    }
-
+    // A folder's marker order is the order the line is drawn in, so a folder filled in
+    // some other order (alphabetically, say) draws a line that criss-crosses the city.
     function fillFolder(store: MarkerStore, positions: [number, number][]): string {
       const group = store.addGroup('Line 1')
       positions.forEach((position, index) => {
         const marker = store.add(position)
         store.update(marker.id, { label: `stop-${index}` })
-        store.assignToGroup(marker.id, group.id)
+        store.addToGroup(marker.id, group.id)
       })
 
       return group.id
+    }
+
+    function sequence(store: MarkerStore, groupId: string): number[] {
+      const byId = new Map(store.all().map((marker) => [marker.id, marker.position[0]]))
+      const group = store.groups().find((candidate) => candidate.id === groupId)
+
+      return (group?.markerIds ?? []).map((id) => byId.get(id) ?? Number.NaN)
     }
 
     it('reorders the folder along the shortest path through its markers', () => {
       const { store } = createFixture()
       const groupId = fillFolder(store, [[2, 0], [0, 0], [3, 0], [1, 0]])
       store.sortGroupAlongPath(groupId)
-      const ordered = store.all().filter((marker) => marker.groupId === groupId)
-      expect(ordered.map((marker) => marker.position[0])).toEqual([0, 1, 2, 3])
+      expect(sequence(store, groupId)).toEqual([0, 1, 2, 3])
+    })
+
+    // Board order is what the ungrouped list draws; only the folder's own line moves.
+    it('leaves board order alone', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[2, 0], [0, 0], [1, 0]])
+      store.sortGroupAlongPath(groupId)
+      expect(store.all().map((marker) => marker.position[0])).toEqual([2, 0, 1])
     })
 
     it('notifies and persists the new order', async () => {
@@ -235,8 +264,10 @@ describe('MarkerStore folders', () => {
       store.sortGroupAlongPath(groupId)
       expect(listener).toHaveBeenCalledTimes(1)
       await vi.advanceTimersByTimeAsync(PERSIST_DEBOUNCE_MS)
-      const saved = await repository.loadForSave('/saves/a.metro')
-      expect(saved.map((marker) => marker.position[0])).toEqual([0, 1, 2])
+      const savedMarkers = await repository.loadForSave('/saves/a.metro')
+      const savedGroups = await repository.loadGroupsForSave('/saves/a.metro')
+      const byId = new Map(savedMarkers.map((marker) => [marker.id, marker.position[0]]))
+      expect(savedGroups[0].markerIds.map((id) => byId.get(id))).toEqual([0, 1, 2])
     })
 
     it('leaves the markers of every other folder where they are', () => {
@@ -245,20 +276,21 @@ describe('MarkerStore folders', () => {
       const other = store.addGroup('Line 2')
       const first = store.add([9, 9])
       const second = store.add([8, 8])
-      store.assignToGroup(first.id, other.id)
-      store.assignToGroup(second.id, other.id)
+      store.addToGroup(first.id, other.id)
+      store.addToGroup(second.id, other.id)
       store.sortGroupAlongPath(sorted)
-      expect(labelsOf(store, other.id)).toEqual([first.label, second.label])
+      expect(store.groups()[1].markerIds).toEqual([first.id, second.id])
     })
 
-    it('leaves loose markers alone', () => {
+    it('sorts a line without disturbing the interchange it shares with another', () => {
       const { store } = createFixture()
-      const groupId = fillFolder(store, [[2, 0], [0, 0], [1, 0]])
-      const loose = store.add([5, 5])
-      store.sortGroupAlongPath(groupId)
-      expect(store.all().filter((marker) => marker.groupId == null)).toEqual([
-        store.all().find((marker) => marker.id === loose.id),
-      ])
+      const sorted = fillFolder(store, [[0, 0], [2, 0], [1, 0]])
+      const other = store.addGroup('Line 2')
+      const shared = store.all()[0]
+      store.addToGroup(shared.id, other.id)
+      store.sortGroupAlongPath(sorted)
+      expect(sequence(store, sorted)).toEqual([0, 1, 2])
+      expect(store.groups()[1].markerIds).toEqual([shared.id])
     })
 
     it('does nothing when the folder is already in order', () => {
@@ -287,6 +319,53 @@ describe('MarkerStore folders', () => {
       store.sortGroupAlongPath(groupId)
       expect(listener).not.toHaveBeenCalled()
     })
+
+    it('skips an id whose marker is gone', () => {
+      const { store } = createFixture()
+      const groupId = fillFolder(store, [[0, 0], [2, 0], [1, 0], [3, 0]])
+      store.remove(store.all()[3].id)
+      store.sortGroupAlongPath(groupId)
+      expect(sequence(store, groupId)).toEqual([0, 1, 2])
+    })
+  })
+
+  describe('visibleMarkers', () => {
+    it('returns every marker when no folder is hidden', () => {
+      const { store } = createFixture()
+      const group = store.addGroup('Line 1')
+      const marker = store.add([0, 0])
+      store.addToGroup(marker.id, group.id)
+      expect(store.visibleMarkers()).toHaveLength(1)
+    })
+
+    it('drops the markers of a hidden folder but keeps ungrouped ones', () => {
+      const { store } = createFixture()
+      const group = store.addGroup('Line 1')
+      const inFolder = store.add([0, 0])
+      store.addToGroup(inFolder.id, group.id)
+      const loose = store.add([1, 1])
+      store.setGroupHidden(group.id, true)
+      const visible = store.visibleMarkers()
+      expect(visible.map((marker) => marker.id)).toEqual([loose.id])
+    })
+
+    it('keeps a marker whose folder no longer exists visible even when another is hidden', () => {
+      const { store } = createFixture()
+      const hiddenGroup = store.addGroup('hidden')
+      const inHidden = store.add([0, 0])
+      store.addToGroup(inHidden.id, hiddenGroup.id)
+      const dangling = store.add([1, 1])
+      store.update(dangling.id, { groupId: 'gone' })
+      store.setGroupHidden(hiddenGroup.id, true)
+      expect(store.visibleMarkers().map((marker) => marker.id)).toEqual([dangling.id])
+    })
+  })
+
+  it('drops every folder when a brand-new game starts', () => {
+    const { store } = createFixture()
+    store.addGroup('Line 1')
+    store.startNewGame()
+    expect(store.groups()).toEqual([])
   })
 
   describe('persistence', () => {
@@ -306,7 +385,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', groupId: 'g1', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ], null)
       await repository.saveGroupsForSave('/saves/a.metro', [
-        { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1' },
+        { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1' },
       ], null)
       playing(state, '/saves/a.metro', 'sao-paulo')
       await store.sync()
@@ -320,7 +399,7 @@ describe('MarkerStore folders', () => {
         { color: '#fff', icon: 'station', id: 'm1', label: 'A', position: [0, 0] },
       ])
       await repository.saveGroupsRecent('sao-paulo', [
-        { collapsed: false, color: null, hidden: false, id: 'g1', name: 'Cached' },
+        { collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Cached' },
       ])
       playing(state, '/saves/_auto_new.metro', 'sao-paulo')
       await store.sync()
@@ -329,7 +408,7 @@ describe('MarkerStore folders', () => {
 
     it('does not inherit the cached folders when a brand-new game starts, and keeps them on disk', async () => {
       const { repository, state, store } = createFixture()
-      await repository.saveGroupsRecent('sao-paulo', [{ collapsed: false, color: null, hidden: false, id: 'g1', name: 'Old' }])
+      await repository.saveGroupsRecent('sao-paulo', [{ collapsed: false, color: null, hidden: false, id: 'g1', markerIds: [], name: 'Old' }])
       playing(state, null, 'sao-paulo')
       store.startNewGame()
       await store.sync()

@@ -161,9 +161,11 @@ export class MapMarkersController {
     const markers = this.store.visibleMarkers()
     this.markerLayer.render(markers, this.store.selected(), { opacity, showLabels: settings.showLabels })
     this.radiusLayer.render(markers, settings, opacity)
-    // Drawn after the circles so the route reads on top of them, and only over the
-    // visible markers, so a hidden folder takes its line down with it.
-    this.routeLayer.render(settings.showRouteLines ? markerRoutes(markers, this.store.groups()) : [], opacity)
+    // Drawn after the circles so the route reads on top of them. Only the folders that
+    // are shown draw a line, but each of those lines is resolved against the whole
+    // board: a marker it shares with a hidden folder is still on it.
+    const shownGroups = this.store.groups().filter((group) => !group.hidden)
+    this.routeLayer.render(settings.showRouteLines ? markerRoutes(this.store.all(), shownGroups) : [], opacity)
   }
 
   // Magnetic placement aid: pull a dragged marker onto the ideal spacing (√3·R) from

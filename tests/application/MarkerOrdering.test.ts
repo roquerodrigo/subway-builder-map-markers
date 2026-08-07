@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { MarkerDrop } from '@/application/MarkerStore'
 import type { GameStateSnapshot } from '@/shared/game/StoreCallbacks'
 
 import { MarkerStore } from '@/application/MarkerStore'
@@ -17,6 +18,19 @@ function createFixture() {
 // Markers come back in board order, which is what the panel draws.
 function labels(store: MarkerStore): string[] {
   return store.all().map((marker) => marker.label)
+}
+
+// A drag that started and ended outside every folder.
+function loose(markerId: string): MarkerDrop {
+  return { from: null, markerId, to: null }
+}
+
+// The labels of a folder's line, in the order it runs through them.
+function sequence(store: MarkerStore, groupId: string): string[] {
+  const byId = new Map(store.all().map((marker) => [marker.id, marker.label]))
+  const group = store.groups().find((candidate) => candidate.id === groupId)
+
+  return (group?.markerIds ?? []).map((id) => byId.get(id) ?? id)
 }
 
 function withMarkers(...names: string[]): { ids: Record<string, string>, store: MarkerStore } {
@@ -40,16 +54,18 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('MarkerStore marker ordering', () => {
+describe('MarkerStore ordering the ungrouped list', () => {
+  // Outside every folder there is no sequence of its own: the list is whatever no
+  // folder claims, in board order, so a drop there reorders the board.
   it('moves a marker in front of another', () => {
     const { ids, store } = withMarkers('a', 'b', 'c')
-    store.moveMarker(ids.c, ids.a, 'before')
+    store.moveMarker(loose(ids.c), { id: ids.a, side: 'before' })
     expect(labels(store)).toEqual(['c', 'a', 'b'])
   })
 
   it('moves a marker behind another', () => {
     const { ids, store } = withMarkers('a', 'b', 'c')
-    store.moveMarker(ids.a, ids.c, 'after')
+    store.moveMarker(loose(ids.a), { id: ids.c, side: 'after' })
     expect(labels(store)).toEqual(['b', 'c', 'a'])
   })
 
@@ -57,7 +73,7 @@ describe('MarkerStore marker ordering', () => {
     const { ids, store } = withMarkers('a', 'b')
     const listener = vi.fn()
     store.subscribe(listener)
-    store.moveMarker(ids.b, ids.a, 'before')
+    store.moveMarker(loose(ids.b), { id: ids.a, side: 'before' })
     expect(listener).toHaveBeenCalled()
   })
 
@@ -67,100 +83,138 @@ describe('MarkerStore marker ordering', () => {
     const { ids, store } = withMarkers('a', 'b')
     const listener = vi.fn()
     store.subscribe(listener)
-    store.moveMarker(ids.a, ids.a, 'before')
+    store.moveMarker(loose(ids.a), { id: ids.a, side: 'before' })
     expect(listener).not.toHaveBeenCalled()
   })
 
   it('ignores a drop involving a marker that is gone', () => {
     const { ids, store } = withMarkers('a', 'b')
-    store.moveMarker('ghost', ids.a, 'before')
-    store.moveMarker(ids.a, 'ghost', 'after')
+    store.moveMarker(loose('ghost'), { id: ids.a, side: 'before' })
+    store.moveMarker(loose(ids.a), { id: 'ghost', side: 'after' })
+    expect(labels(store)).toEqual(['a', 'b'])
+  })
+
+  it('ignores a drop with nothing to land next to', () => {
+    const { ids, store } = withMarkers('a', 'b')
+    store.moveMarker(loose(ids.b))
     expect(labels(store)).toEqual(['a', 'b'])
   })
 })
 
-describe('MarkerStore marker ordering across folders', () => {
-  // Reordering inside a folder and moving between folders are one gesture, so a marker
-  // dropped on a card in another folder joins that folder — otherwise it would land in
-  // the right place on screen while still belonging somewhere else.
-  it('adopts the folder of the marker it was dropped next to', () => {
-    const { ids, store } = withMarkers('a', 'b')
-    const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.b, line.id)
-
-    store.moveMarker(ids.a, ids.b, 'after')
-
-    expect(store.all().find((marker) => marker.id === ids.a)?.groupId).toBe(line.id)
-  })
-
-  it('leaves a folder when dropped next to a marker outside every folder', () => {
-    const { ids, store } = withMarkers('a', 'b')
-    const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.a, line.id)
-
-    store.moveMarker(ids.a, ids.b, 'before')
-
-    expect(store.all().find((marker) => marker.id === ids.a)?.groupId).toBeNull()
-  })
-
-  // The position is already right when a marker is dropped next to one of its own
-  // neighbours; only the folder changed, and that still has to be committed.
-  it('commits a folder change even when the order is unchanged', () => {
-    const { ids, store } = withMarkers('a', 'b')
-    const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.b, line.id)
-
-    store.moveMarker(ids.a, ids.b, 'before')
-
-    expect(store.all().find((marker) => marker.id === ids.a)?.groupId).toBe(line.id)
-    expect(labels(store)).toEqual(['a', 'b'])
-  })
-})
-
-describe('MarkerStore dropping a marker on a folder', () => {
-  it('appends the marker to that folder', () => {
+describe('MarkerStore ordering a folder s line', () => {
+  it('reorders the folder without touching board order', () => {
     const { ids, store } = withMarkers('a', 'b', 'c')
     const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.b, line.id)
+    for (const name of ['a', 'b', 'c']) {
+      store.addToGroup(ids[name], line.id)
+    }
 
-    store.moveMarkerToGroup(ids.a, line.id)
+    store.moveMarker({ from: line.id, markerId: ids.c, to: line.id }, { id: ids.a, side: 'before' })
 
-    expect(store.all().find((marker) => marker.id === ids.a)?.groupId).toBe(line.id)
-    expect(labels(store)).toEqual(['b', 'a', 'c'])
+    expect(sequence(store, line.id)).toEqual(['c', 'a', 'b'])
+    expect(labels(store)).toEqual(['a', 'b', 'c'])
   })
 
-  it('takes a marker out of every folder with null', () => {
+  it('drops a marker behind another', () => {
+    const { ids, store } = withMarkers('a', 'b')
+    const line = store.addGroup('Line 1')
+    store.addToGroup(ids.a, line.id)
+    store.addToGroup(ids.b, line.id)
+
+    store.moveMarker({ from: line.id, markerId: ids.a, to: line.id }, { id: ids.b, side: 'after' })
+
+    expect(sequence(store, line.id)).toEqual(['b', 'a'])
+  })
+
+  it('stays quiet when the drop changes nothing', () => {
+    const { ids, store } = withMarkers('a', 'b')
+    const line = store.addGroup('Line 1')
+    store.addToGroup(ids.a, line.id)
+    store.addToGroup(ids.b, line.id)
+    const listener = vi.fn()
+    store.subscribe(listener)
+
+    store.moveMarker({ from: line.id, markerId: ids.b, to: line.id }, { id: ids.a, side: 'after' })
+
+    expect(listener).not.toHaveBeenCalled()
+  })
+})
+
+describe('MarkerStore moving a marker between folders', () => {
+  // A drag moves: the marker leaves the line it was dragged out of and joins the one it
+  // was dropped into, at the place it was dropped. Putting it on a second line without
+  // leaving the first is what the card s folder chips are for.
+  it('takes the marker off the folder it was dragged out of', () => {
+    const { ids, store } = withMarkers('a', 'b')
+    const one = store.addGroup('Line 1')
+    const two = store.addGroup('Line 2')
+    store.addToGroup(ids.a, one.id)
+    store.addToGroup(ids.b, two.id)
+
+    store.moveMarker({ from: one.id, markerId: ids.a, to: two.id }, { id: ids.b, side: 'before' })
+
+    expect(sequence(store, one.id)).toEqual([])
+    expect(sequence(store, two.id)).toEqual(['a', 'b'])
+  })
+
+  it('appends the marker when it was dropped on the folder itself', () => {
+    const { ids, store } = withMarkers('a', 'b')
+    const line = store.addGroup('Line 1')
+    store.addToGroup(ids.b, line.id)
+
+    store.moveMarker({ from: null, markerId: ids.a, to: line.id })
+
+    expect(sequence(store, line.id)).toEqual(['b', 'a'])
+  })
+
+  it('takes a marker out of its folder when dropped on the ungrouped list', () => {
     const { ids, store } = withMarkers('a')
     const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.a, line.id)
+    store.addToGroup(ids.a, line.id)
 
-    store.moveMarkerToGroup(ids.a, null)
+    store.moveMarker({ from: line.id, markerId: ids.a, to: null })
 
-    expect(store.all()[0].groupId).toBeNull()
+    expect(sequence(store, line.id)).toEqual([])
   })
 
-  // A folder that no longer exists must not orphan the marker into it.
+  // The marker stays on every other line it is on: only the folder it was dragged out
+  // of loses it.
+  it('leaves the other lines of an interchange alone', () => {
+    const { ids, store } = withMarkers('a')
+    const one = store.addGroup('Line 1')
+    const two = store.addGroup('Line 2')
+    store.addToGroup(ids.a, one.id)
+    store.addToGroup(ids.a, two.id)
+
+    store.moveMarker({ from: one.id, markerId: ids.a, to: null })
+
+    expect(sequence(store, one.id)).toEqual([])
+    expect(sequence(store, two.id)).toEqual(['a'])
+  })
+
+  // A folder that no longer exists must not swallow the marker.
   it('ignores a folder it does not know', () => {
     const { ids, store } = withMarkers('a')
-    store.moveMarkerToGroup(ids.a, 'ghost-folder')
-    expect(store.all()[0].groupId).toBeUndefined()
+    const line = store.addGroup('Line 1')
+    store.moveMarker({ from: null, markerId: ids.a, to: 'ghost-folder' })
+    expect(sequence(store, line.id)).toEqual([])
   })
 
   it('ignores a marker that is gone', () => {
     const { store } = withMarkers('a')
     const line = store.addGroup('Line 1')
-    store.moveMarkerToGroup('ghost', line.id)
-    expect(labels(store)).toEqual(['a'])
+    store.moveMarker({ from: null, markerId: 'ghost', to: line.id })
+    expect(sequence(store, line.id)).toEqual([])
   })
 
   it('stays quiet when the marker is already the last of that folder', () => {
     const { ids, store } = withMarkers('a')
     const line = store.addGroup('Line 1')
-    store.assignToGroup(ids.a, line.id)
+    store.addToGroup(ids.a, line.id)
     const listener = vi.fn()
     store.subscribe(listener)
 
-    store.moveMarkerToGroup(ids.a, line.id)
+    store.moveMarker({ from: line.id, markerId: ids.a, to: line.id })
 
     expect(listener).not.toHaveBeenCalled()
   })
@@ -192,13 +246,13 @@ describe('MarkerStore folder ordering', () => {
     const { ids, store } = withMarkers('a', 'b')
     const one = store.addGroup('Line 1')
     const two = store.addGroup('Line 2')
-    store.assignToGroup(ids.a, one.id)
-    store.assignToGroup(ids.b, two.id)
+    store.addToGroup(ids.a, one.id)
+    store.addToGroup(ids.b, two.id)
 
     store.moveGroup(two.id, one.id, 'before')
 
-    expect(store.all().find((marker) => marker.id === ids.a)?.groupId).toBe(one.id)
-    expect(store.all().find((marker) => marker.id === ids.b)?.groupId).toBe(two.id)
+    expect(sequence(store, one.id)).toEqual(['a'])
+    expect(sequence(store, two.id)).toEqual(['b'])
   })
 
   it('stays quiet when the drop changes nothing', () => {

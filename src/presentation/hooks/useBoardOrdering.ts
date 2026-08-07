@@ -16,6 +16,10 @@ export interface BoardDrag {
 }
 
 export interface DraggedItem {
+  // For a marker: the folder its card was dragged out of (null = the ungrouped list),
+  // which is what a drop into another folder moves it out of. The same marker can sit
+  // in several folders, so the card alone doesn't say where the drag started.
+  from?: null | string
   id: string
   kind: DragKind
 }

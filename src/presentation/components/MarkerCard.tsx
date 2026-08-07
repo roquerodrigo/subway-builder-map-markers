@@ -26,13 +26,16 @@ export interface MarkerCardDrag {
 
 export interface MarkerCardProps {
   drag?: MarkerCardDrag
-  // The folders a marker can be moved into. Absent/empty hides the folder picker, so a
-  // board with no folders keeps the card unchanged.
+  // Every folder on the board. Absent/empty hides the folder controls, so a board with
+  // no folders keeps the card unchanged.
   groups?: MarkerGroup[]
   marker: Marker
-  onAssign?: (groupId: null | string) => void
+  // The folders this marker is on — more than one where lines meet.
+  memberships?: MarkerGroup[]
+  onAddToGroup?: (groupId: string) => void
   onFocus: () => void
   onRemove: () => void
+  onRemoveFromGroup?: (groupId: string) => void
   onSelect: () => void
   onUpdate: (patch: Partial<Omit<Marker, 'id'>>) => void
   selected: boolean
@@ -46,14 +49,16 @@ export interface MarkerCardProps {
 const CENTRE_BACKDROP = { inset: 0, marginTop: 0, position: 'absolute', zIndex: 0 } as const
 const CONTROL_LAYER = { position: 'relative', zIndex: 1 } as const
 
-// One marker's controls: its badge, an editable label, color + icon pickers, an
-// optional folder picker, and a remove action. Clicking any empty part of the card
-// centres the map on the marker. Selecting the card highlights the matching badge on
-// the map (and vice-versa).
+// One marker's controls: its badge, an editable label, color + icon pickers, the
+// folders it is on, and a remove action. Clicking any empty part of the card centres
+// the map on the marker. Selecting the card highlights the matching badge on the map
+// (and vice-versa).
 export function MarkerCard(
-  { drag, groups, marker, onAssign, onFocus, onRemove, onSelect, onUpdate, selected }: MarkerCardProps,
+  { drag, groups, marker, memberships, onAddToGroup, onFocus, onRemove, onRemoveFromGroup, onSelect, onUpdate, selected }: MarkerCardProps,
 ): JSX.Element {
   const cardRef = React.useRef<HTMLDivElement>(null)
+  const on = memberships ?? []
+  const available = (groups ?? []).filter((group) => !on.some((held) => held.id === group.id))
 
   // Selection usually starts on the map (clicking or dropping a badge), and the
   // matching card is often scrolled out of sight — highlighting it there would be
@@ -121,19 +126,52 @@ export function MarkerCard(
 
       {groups && groups.length > 0 ?
           (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground" style={CONTROL_LAYER}>
-              <span className="shrink-0">Folder</span>
-              <select
-                aria-label="Move to folder"
-                className="min-w-0 flex-1 rounded-md border border-border bg-primary/5 px-2 py-1 text-xs"
-                onChange={(event) => onAssign?.(event.target.value || null)}
-                value={marker.groupId ?? ''}
-              >
-                <option value="">No folder</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>{group.name}</option>
-                ))}
-              </select>
+            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" style={CONTROL_LAYER}>
+              <span className="shrink-0">Folders</span>
+              {on.map((group) => (
+                <span
+                  className="flex items-center gap-1 rounded-full border border-border bg-primary/5 py-0.5 pl-2 pr-1"
+                  key={group.id}
+                  style={{ borderColor: group.color ?? undefined }}
+                >
+                  {group.name}
+                  <button
+                    aria-label={`Take off ${group.name || 'folder'}`}
+                    className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-red-500/25 hover:text-red-300"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onRemoveFromGroup?.(group.id)
+                    }}
+                    title="Take this marker off that folder's line"
+                    type="button"
+                  >
+                    <svg fill="none" height="9" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" width="9">
+                      <line x1="6" x2="18" y1="6" y2="18" />
+                      <line x1="18" x2="6" y1="6" y2="18" />
+                    </svg>
+                  </button>
+                </span>
+              ))}
+              {on.length === 0 ? <span className="rounded-full px-1">None</span> : null}
+              {available.length > 0 ?
+                  (
+                    <select
+                      aria-label="Add to folder"
+                      className="min-w-0 flex-1 rounded-md border border-border bg-primary/5 px-2 py-1 text-xs"
+                      onChange={(event) => {
+                        if (event.target.value) {
+                          onAddToGroup?.(event.target.value)
+                        }
+                      }}
+                      value=""
+                    >
+                      <option value="">Add to folder…</option>
+                      {available.map((group) => (
+                        <option key={group.id} value={group.id}>{group.name}</option>
+                      ))}
+                    </select>
+                  ) :
+                null}
             </div>
           ) :
         null}

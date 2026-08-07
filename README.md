@@ -41,6 +41,11 @@ map alike.
 **Move one** — drag its badge on the map. The map won't pan while you drag, and the
 influence circle follows in real time.
 
+**Put one marker on several lines** — a station where lines meet belongs to each of
+them. The card lists the folders it is on, with a picker to add another and an **✕** on
+each to take it off that one; every line it is on runs through it. Dragging a card
+between folders **moves** it instead.
+
 **Sort a folder** — the path button in a folder's header reorders its markers along the
 shortest path through them. Marker order is the order the folder's line is drawn in, so
 this is what turns a folder filled in some other order (alphabetically, say) into a

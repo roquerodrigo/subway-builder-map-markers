@@ -5,10 +5,27 @@ import type { MarkerRepository } from '@/infrastructure/persistence/MarkerReposi
 import type { GameSession } from '@/infrastructure/store/GameSession'
 import type { Coordinate } from '@/shared/game/Coordinate'
 
+import { withLegacyGroupIds, withSequencesFromLegacy } from '@/domain/group/LegacyGroupLink'
 import { createGroup } from '@/domain/group/MarkerGroupFactory'
 import { createMarker } from '@/domain/marker/MarkerFactory'
 import { moveAfter, moveBefore } from '@/domain/ordering/ItemOrder'
 import { orderAlongPath } from '@/domain/route/PathOrder'
+
+// A marker dropped by the panel: which list it was dragged out of and which one it was
+// dropped into (null being the ungrouped list). Dragging moves; the card's folder chips
+// are what put one marker on a second line.
+export interface MarkerDrop {
+  from: null | string
+  markerId: string
+  to: null | string
+}
+
+// The card a marker was dropped on, and which side of it. Absent when the drop landed
+// on a folder itself rather than on one of its cards.
+export interface MarkerDropTarget {
+  id: string
+  side: DropSide
+}
 
 type Listener = () => void
 
@@ -81,17 +98,20 @@ export class MarkerStore {
     return group
   }
 
-  all(): Marker[] {
-    return this.markers
-  }
-
-  // Move a marker into a folder (or out of every folder with null). A groupId that
-  // matches no folder is rejected, so a stale id can't orphan a marker.
-  assignToGroup(markerId: string, groupId: null | string): void {
-    if (groupId !== null && !this.groupList.some((group) => group.id === groupId)) {
+  // Put a marker on a folder's line, at the end of it, without taking it off any other:
+  // an interchange is on every line that stops there. A marker or folder that isn't
+  // there, or a marker the folder already holds, is a no-op.
+  addToGroup(markerId: string, groupId: string): void {
+    if (!this.markers.some((marker) => marker.id === markerId)) {
       return
     }
-    this.update(markerId, { groupId })
+    this.updateGroup(groupId, (group) => (
+      group.markerIds.includes(markerId) ? group : { ...group, markerIds: [...group.markerIds, markerId] }
+    ))
+  }
+
+  all(): Marker[] {
+    return this.markers
   }
 
   clear(): void {
@@ -120,41 +140,37 @@ export class MarkerStore {
     this.commit()
   }
 
-  // Drop a marker next to another one: it lands in the target's folder and takes the
-  // place asked for. Moving between folders and reordering inside one are the same
-  // gesture, so they're the same operation.
-  moveMarker(movedId: string, targetId: string, side: DropSide): void {
-    const target = this.markers.find((marker) => marker.id === targetId)
-    const moved = this.markers.find((marker) => marker.id === movedId)
-    if (!target || !moved) {
+  // A marker dropped somewhere by the panel. `from` is the list the drag started in
+  // (a folder, or null for the ungrouped list) and `to` is where it was dropped, so a
+  // drag out of one line and into another moves it, while the card's own folder chips
+  // are what put a marker on a second line. `beside` is the card it was dropped on,
+  // absent when it was dropped on the folder itself (it joins at the end).
+  moveMarker(drop: MarkerDrop, beside?: MarkerDropTarget): void {
+    if (!this.markers.some((marker) => marker.id === drop.markerId)) {
       return
     }
-    const reordered = side === 'before' ?
-        moveBefore(this.markers, movedId, targetId) :
-        moveAfter(this.markers, movedId, targetId)
-    const group = target.groupId ?? null
-    if (reordered === this.markers && (moved.groupId ?? null) === group) {
-      return
-    }
-    this.markers = reordered.map((marker) => (marker.id === movedId ? this.withGroup(marker, group) : marker))
-    this.commit()
-  }
+    if (drop.to === null && drop.from === null) {
+      this.reorderUngrouped(drop.markerId, beside)
 
-  // Drop a marker on a folder itself (its header, or the empty space inside it) rather
-  // than on one of its markers: it joins that folder at the end. `null` takes it out of
-  // every folder, which is the only way to reach an empty ungrouped list.
-  moveMarkerToGroup(movedId: string, groupId: null | string): void {
-    const moved = this.markers.find((marker) => marker.id === movedId)
-    if (!moved || (groupId !== null && !this.groupList.some((group) => group.id === groupId))) {
       return
     }
-    const siblings = this.markers.filter((marker) => marker.id !== movedId && (marker.groupId ?? null) === groupId)
-    const last = siblings[siblings.length - 1]
-    const reordered = last ? moveAfter(this.markers, movedId, last.id) : this.markers
-    if (reordered === this.markers && (moved.groupId ?? null) === groupId) {
+    if (drop.to !== null && !this.groupList.some((group) => group.id === drop.to)) {
       return
     }
-    this.markers = reordered.map((marker) => (marker.id === movedId ? this.withGroup(marker, groupId) : marker))
+    const next = this.groupList.map((group) => {
+      if (group.id === drop.from && group.id !== drop.to) {
+        return { ...group, markerIds: group.markerIds.filter((id) => id !== drop.markerId) }
+      }
+      if (group.id === drop.to) {
+        return { ...group, markerIds: placeIn(group.markerIds, drop.markerId, beside) }
+      }
+
+      return group
+    })
+    if (next.every((group, index) => sameSequence(group, this.groupList[index]))) {
+      return
+    }
+    this.groupList = next
     this.commit()
   }
 
@@ -164,20 +180,35 @@ export class MarkerStore {
       return
     }
     this.markers = next
+    // Off every line it was on: a folder holding a marker that no longer exists would
+    // just skip it, but leaving the id there means a new marker reusing it would join
+    // a line nobody put it on.
+    this.groupList = this.groupList.map((group) => (
+      group.markerIds.includes(id) ? { ...group, markerIds: group.markerIds.filter((held) => held !== id) } : group
+    ))
     if (this.selectedId === id) {
       this.selectedId = null
     }
     this.commit()
   }
 
-  // Drop a folder without deleting its markers: they fall back to "no folder" so
-  // nothing on the board is lost.
+  // Take a marker off one folder's line, leaving it on any other line it is on and on
+  // the board (it falls back to the ungrouped list when it was its last folder).
+  removeFromGroup(markerId: string, groupId: string): void {
+    this.updateGroup(groupId, (group) => (
+      group.markerIds.includes(markerId) ?
+          { ...group, markerIds: group.markerIds.filter((id) => id !== markerId) } :
+        group
+    ))
+  }
+
+  // Drop a folder without deleting its markers: whatever it held falls back to "no
+  // folder" (unless another line also stops there), so nothing on the board is lost.
   removeGroup(id: string): void {
     if (!this.groupList.some((group) => group.id === id)) {
       return
     }
     this.groupList = this.groupList.filter((group) => group.id !== id)
-    this.markers = this.markers.map((marker) => (marker.groupId === id ? { ...marker, groupId: null } : marker))
     this.commit()
   }
 
@@ -248,22 +279,21 @@ export class MarkerStore {
     }
   }
 
-  // Reorder a folder's markers along the shortest path through them, leaving every
-  // other marker where it is. Marker order is what the drawn line follows, so this is
-  // how a folder that was filled in some other order (alphabetically, say) becomes a
-  // route: one action instead of dragging every card into place.
+  // Reorder one folder's line along the shortest path through its markers, leaving
+  // every other folder alone. That order is what the drawn line follows, so this is how
+  // a folder filled in some other order (alphabetically, say) becomes a route: one
+  // action instead of dragging every card into place.
   sortGroupAlongPath(groupId: string): void {
-    if (!this.groupList.some((group) => group.id === groupId)) {
-      return
-    }
-    const inGroup = this.markers.filter((marker) => marker.groupId === groupId)
-    const ordered = orderAlongPath(inGroup)
-    if (ordered.every((marker, index) => marker === inGroup[index])) {
-      return
-    }
-    const queue = [...ordered]
-    this.markers = this.markers.map((marker) => (marker.groupId === groupId ? queue.shift() ?? marker : marker))
-    this.commit()
+    const byId = new Map(this.markers.map((marker) => [marker.id, marker]))
+    this.updateGroup(groupId, (group) => {
+      const held = group.markerIds.map((id) => byId.get(id)).filter((marker) => marker !== undefined)
+      const ordered = orderAlongPath(held)
+      if (ordered.every((marker, index) => marker === held[index])) {
+        return group
+      }
+
+      return { ...group, markerIds: ordered.map((marker) => marker.id) }
+    })
   }
 
   // Reset for a brand-new game (onGameInit): start empty, and stop reading the city's
@@ -379,15 +409,22 @@ export class MarkerStore {
     }
   }
 
-  // The markers the map should draw: everything except markers inside a hidden folder.
-  // A marker with no folder (or a dangling groupId) is always visible.
+  // The markers the map should draw: everything except the markers every folder holding
+  // them has hidden. An interchange stays on the map while any one of its lines is
+  // shown, and a marker no folder holds is always visible.
   visibleMarkers(): Marker[] {
-    const hidden = new Set(this.groupList.filter((group) => group.hidden).map((group) => group.id))
+    const hidden = new Set<string>()
+    const shown = new Set<string>()
+    for (const group of this.groupList) {
+      for (const markerId of group.markerIds) {
+        (group.hidden ? hidden : shown).add(markerId)
+      }
+    }
     if (hidden.size === 0) {
       return this.markers
     }
 
-    return this.markers.filter((marker) => marker.groupId == null || !hidden.has(marker.groupId))
+    return this.markers.filter((marker) => !hidden.has(marker.id) || shown.has(marker.id))
   }
 
   private commit(): void {
@@ -431,18 +468,18 @@ export class MarkerStore {
     if (saveId) {
       const own = await this.repository.loadForSave(saveId)
       if (own.length > 0) {
-        return { groups: await this.repository.loadGroupsForSave(saveId), markers: own }
+        return migrated({ groups: await this.repository.loadGroupsForSave(saveId), markers: own })
       }
     }
     if (city && this.inheritsCityCache) {
       const recent = await this.repository.loadRecent(city)
       const groups = await this.repository.loadGroupsRecent(city)
       if (recent.length > 0) {
-        return { groups, markers: recent }
+        return migrated({ groups, markers: recent })
       }
       const recovered = await this.repository.loadLatestForCity(city)
 
-      return recovered ?? { groups, markers: [] }
+      return migrated(recovered ?? { groups, markers: [] })
     }
 
     return { groups: [], markers: [] }
@@ -454,16 +491,79 @@ export class MarkerStore {
     }
   }
 
-  // Coalesce the many writes a drag produces into one write to each bucket.
+  // Coalesce the many writes a drag produces into one write to each bucket. The markers
+  // go out carrying the folder that holds them first, so a board written here still
+  // opens in a build from before folders held their own sequences.
   private persist(): void {
-    this.pendingWrite = { city: this.city, groups: this.groupList, markers: this.markers, saveId: this.saveId }
+    this.pendingWrite = {
+      city: this.city,
+      groups: this.groupList,
+      markers: withLegacyGroupIds(this.markers, this.groupList),
+      saveId: this.saveId,
+    }
     if (this.persistTimer !== null) {
       clearTimeout(this.persistTimer)
     }
     this.persistTimer = setTimeout(() => void this.flushPersist(), PERSIST_DEBOUNCE_MS)
   }
 
-  private withGroup(marker: Marker, groupId: null | string): Marker {
-    return { ...marker, groupId }
+  // The ungrouped list has no sequence of its own: it is whatever no folder claims, in
+  // board order, so reordering there reorders the board.
+  private reorderUngrouped(markerId: string, beside?: MarkerDropTarget): void {
+    if (!beside) {
+      return
+    }
+    const next = beside.side === 'before' ?
+        moveBefore(this.markers, markerId, beside.id) :
+        moveAfter(this.markers, markerId, beside.id)
+    if (next === this.markers) {
+      return
+    }
+    this.markers = next
+    this.commit()
   }
+
+  private updateGroup(id: string, change: (group: MarkerGroup) => MarkerGroup): void {
+    let changed = false
+    const next = this.groupList.map((group) => {
+      if (group.id !== id) {
+        return group
+      }
+      const updated = change(group)
+      changed ||= updated !== group
+
+      return updated
+    })
+    if (changed) {
+      this.groupList = next
+      this.commit()
+    }
+  }
+}
+
+// A board read off disk, with any folder written before folders held sequences given
+// the markers that named it.
+function migrated(board: { groups: MarkerGroup[], markers: Marker[] }): { groups: MarkerGroup[], markers: Marker[] } {
+  return { groups: withSequencesFromLegacy(board.groups, board.markers), markers: board.markers }
+}
+
+// Where a dropped marker lands in a folder's sequence: next to the card it was dropped
+// on, or at the end when it was dropped on the folder itself.
+function placeIn(markerIds: string[], markerId: string, beside?: MarkerDropTarget): string[] {
+  const without = markerIds.filter((id) => id !== markerId)
+  if (!beside || beside.id === markerId) {
+    return [...without, markerId]
+  }
+  const target = without.indexOf(beside.id)
+  if (target < 0) {
+    return [...without, markerId]
+  }
+  const at = beside.side === 'before' ? target : target + 1
+
+  return [...without.slice(0, at), markerId, ...without.slice(at)]
+}
+
+function sameSequence(one: MarkerGroup, other: MarkerGroup): boolean {
+  return one.markerIds.length === other.markerIds.length &&
+    one.markerIds.every((id, index) => id === other.markerIds[index])
 }

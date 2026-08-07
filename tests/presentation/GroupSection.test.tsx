@@ -8,23 +8,25 @@ import { h } from '@/infrastructure/ui/react'
 import { GroupSection } from '@/presentation/components/GroupSection'
 
 function group(overrides: Partial<MarkerGroup> = {}): MarkerGroup {
-  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', name: 'Line 1', ...overrides }
+  return { collapsed: false, color: '#0a4d9c', hidden: false, id: 'g1', markerIds: [], name: 'Line 1', ...overrides }
 }
 
 function marker(id: string): Marker {
-  return { color: '#ef4444', groupId: 'g1', icon: 'station', id, label: id, position: [-46.63, -23.55] }
+  return { color: '#ef4444', icon: 'station', id, label: id, position: [-46.63, -23.55] }
 }
 
 function renderSection(overrides: {
   collapsed?: boolean
   group?: MarkerGroup
+  groups?: MarkerGroup[]
   markers?: Marker[]
 } = {}) {
   const handlers = {
-    onAssign: vi.fn(),
+    onAddToGroup: vi.fn(),
     onDelete: vi.fn(),
     onFocus: vi.fn(),
     onRemove: vi.fn(),
+    onRemoveFromGroup: vi.fn(),
     onRename: vi.fn(),
     onSelect: vi.fn(),
     onSortAlongPath: vi.fn(),
@@ -37,12 +39,14 @@ function renderSection(overrides: {
     <GroupSection
       collapsed={overrides.collapsed ?? false}
       group={theGroup}
-      groups={[theGroup]}
+      groups={overrides.groups ?? [theGroup]}
       markers={overrides.markers ?? [marker('m1')]}
-      onAssign={handlers.onAssign}
+      memberships={() => [theGroup]}
+      onAddToGroup={handlers.onAddToGroup}
       onDelete={handlers.onDelete}
       onFocus={handlers.onFocus}
       onRemove={handlers.onRemove}
+      onRemoveFromGroup={handlers.onRemoveFromGroup}
       onRename={handlers.onRename}
       onSelect={handlers.onSelect}
       onSortAlongPath={handlers.onSortAlongPath}
@@ -120,10 +124,19 @@ describe('GroupSection', () => {
     expect(onDelete).toHaveBeenCalledOnce()
   })
 
-  it('moves a marker to another folder through onAssign', () => {
-    const { onAssign } = renderSection({ markers: [marker('m1')] })
-    fireEvent.change(screen.getByLabelText('Move to folder'), { target: { value: '' } })
-    expect(onAssign).toHaveBeenCalledWith('m1', null)
+  it('takes a marker off this folder through onRemoveFromGroup', () => {
+    const { onRemoveFromGroup } = renderSection({ markers: [marker('m1')] })
+    fireEvent.click(screen.getByRole('button', { name: 'Take off Line 1' }))
+    expect(onRemoveFromGroup).toHaveBeenCalledWith('m1', 'g1')
+  })
+
+  // The card lists every line a marker is on, so an interchange can be put on another
+  // one without leaving this folder.
+  it('puts a marker on another folder through onAddToGroup', () => {
+    const other = group({ id: 'g2', name: 'Line 2' })
+    const handlers = renderSection({ groups: [group(), other], markers: [marker('m1')] })
+    fireEvent.change(screen.getByLabelText('Add to folder'), { target: { value: 'g2' } })
+    expect(handlers.onAddToGroup).toHaveBeenCalledWith('m1', 'g2')
   })
 
   describe('sorting the folder along its path', () => {
