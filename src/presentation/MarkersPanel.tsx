@@ -327,7 +327,10 @@ export function createMarkersPanel(dependencies: PanelDependencies): () => JSX.E
                     (
                       <button
                         className="mt-2 w-full rounded-md border border-dashed border-border py-1.5 text-xs text-muted-foreground transition hover:bg-primary/10"
-                        onClick={() => store.addGroup(`Folder ${groups.length + 1}`)}
+                        // Straight into the new folder: it is empty, and everything
+                        // you would do next — name it, colour it, put markers on its
+                        // line — is in there.
+                        onClick={() => setOpenFolderId(store.addGroup(`Folder ${groups.length + 1}`).id)}
                         type="button"
                       >
                         + New folder
