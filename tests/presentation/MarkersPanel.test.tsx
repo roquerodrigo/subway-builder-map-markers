@@ -366,6 +366,21 @@ describe('MarkersPanel folders', () => {
     expect(screen.getByLabelText('Folder name')).toBeDefined()
   })
 
+  // A folder is created to be filled, and everything that fills it — its name, its
+  // colour, the markers placed while it is open — is inside its view.
+  it('opens the folder it just created', () => {
+    renderPanel([createMarker('a', 'Central')])
+    fireEvent.click(screen.getByRole('button', { name: /New folder/ }))
+    expect(screen.getByRole('button', { name: 'Back to folders' })).toBeDefined()
+    expect(screen.getByText(/Empty/)).toBeDefined()
+  })
+
+  it('takes a marker placed straight after into the folder it just created', () => {
+    const { controller } = renderPanel([createMarker('a', 'Central')])
+    fireEvent.click(screen.getByRole('button', { name: /New folder/ }))
+    expect(controller.setOpenFolder).toHaveBeenLastCalledWith('g1')
+  })
+
   it('renders a card list flat while there are no folders', () => {
     renderPanel([createMarker('a', 'Central')])
     expect(screen.queryByLabelText('Folder name')).toBeNull()

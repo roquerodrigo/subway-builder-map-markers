@@ -54,7 +54,8 @@ Zoomed far out the badges step aside (names first, then the badges themselves) s
 can't pile into an unreadable clump; the folder lines stay, which is what an overview
 is for.
 
-**Open a folder** — a folder opens into a view of its own (a line has dozens of stops,
+**Open a folder** — **New folder** creates one and takes you straight into it; any
+folder opens into a view of its own (a line has dozens of stops,
 so unfolding it in place would bury every other folder), with a **back** button to the
 list. Its **color** is set there: the folder's line takes it on the map, and so does
 every marker created in the folder.
