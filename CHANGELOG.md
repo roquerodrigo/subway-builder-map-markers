@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.3.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.2.1...v1.3.0) (2026-09-02)
+
+
+### Features
+
+* colour a marker after the lines it is on ([22ea0f7](https://github.com/roquerodrigo/subway-builder-map-markers/commit/22ea0f775377494eef6aea5fbeec6e43ed4b18cf))
+* draw a guide line through each folder's markers ([400757c](https://github.com/roquerodrigo/subway-builder-map-markers/commit/400757c61ad16bb7c04bfdfcad3ab2867a153e69))
+* draw stations as platforms and take the panel to the marker you click ([3daea4d](https://github.com/roquerodrigo/subway-builder-map-markers/commit/3daea4d44d3d80e899bf05516402395aae925a1a))
+* join a folder's line from the map ([526502a](https://github.com/roquerodrigo/subway-builder-map-markers/commit/526502aafe230c8308d6c504d8738013ba10c74d))
+* let one marker sit on several folders' lines ([fcc905b](https://github.com/roquerodrigo/subway-builder-map-markers/commit/fcc905b98a533186ea0b495819c27b6522f84695))
+* name a new marker off the streets, and open folders one at a time ([275b086](https://github.com/roquerodrigo/subway-builder-map-markers/commit/275b0869ca9384ad75136d6e8515ac0886bd61ff))
+* open a folder as soon as it is created ([a22a58c](https://github.com/roquerodrigo/subway-builder-map-markers/commit/a22a58c0c913e5e7351e3ec77237d279a082c7f4))
+
+
+### Documentation
+
+* add GitHub Sponsors button and support section ([d090747](https://github.com/roquerodrigo/subway-builder-map-markers/commit/d090747872cbf105236f4f34052182193f00b102))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the npm_and_yarn group across 1 directory with 2 updates ([0757306](https://github.com/roquerodrigo/subway-builder-map-markers/commit/0757306a340e8998da9b53f87659b934553bc8b2))
+* **deps-dev:** bump undici ([e2261ac](https://github.com/roquerodrigo/subway-builder-map-markers/commit/e2261acb07b9e0cf3af6c1298029b0d68607b961))
+* move CI to the shared workflows repository ([5bc7219](https://github.com/roquerodrigo/subway-builder-map-markers/commit/5bc7219c86df052aa54b2d63299a21df0fdbe8d9))
+* release on every conventional commit type ([7bb2db3](https://github.com/roquerodrigo/subway-builder-map-markers/commit/7bb2db314d7f7d317afefc834288ec3e75f00230))
+
 ## [1.2.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.2.0...v1.2.1) (2026-07-28)
 
 
