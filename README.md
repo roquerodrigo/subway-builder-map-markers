@@ -1,5 +1,7 @@
 # Map Markers
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-db61a2?logo=githubsponsors&logoColor=white&style=for-the-badge)](https://github.com/sponsors/roquerodrigo)
+
 A mod for [Subway Builder](https://www.subwaybuilder.com) that lets you drop
 **draggable markers** on the map to sketch where future stations could go — each
 with a **color**, an **icon** and a name, plus an optional **influence radius** to
@@ -182,6 +184,10 @@ API reference: <https://www.subwaybuilder.com/docs/v1.0.0/api-reference>
 - The map instance and UI API are version-specific; verify against a new game version
   before trusting them. If the toolbar button ever disappears after an update, check
   that the `MapPin` icon key still exists in the game's icon set.
+
+## Support
+
+This mod is built and maintained on personal time. If it is useful to you, consider [sponsoring the work](https://github.com/sponsors/roquerodrigo) — it keeps the development, the testing and the releases coming.
 
 ## License
 
