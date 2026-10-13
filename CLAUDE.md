@@ -8,10 +8,6 @@ an icon, an editable label and an optional **1 km influence radius**. React come
 the host at runtime (never bundled). Conventions mirror the sibling mod
 `subway-builder-auto-lines`.
 
-Markers can be organized into **folders** (one per line, say), each foldable and
-hideable on its own; and, as an **opt-in** setting, a station the player builds inside
-a marker's influence area is **renamed to that marker's label**.
-
 **A folder holds its markers, not the other way round.** `MarkerGroup.markerIds` is an
 ordered list of marker ids — that order *is* the line — and the same id may sit in
 several folders, because an interchange is on every line that stops there and each of
@@ -22,15 +18,11 @@ and read only to migrate a folder that carries no sequence yet
 card's folder chips are what put one marker on a second line. A marker leaves the map
 only when *every* folder holding it is hidden.
 
-A folder **opens into a view of its own** rather than unfolding in the list, and which
-one is open is the panel's own state (the board no longer carries a `collapsed` flag).
-That open folder is also where a newly placed marker lands, in the folder's color.
-
 A new marker is **named the way the game names a station** there: `RoadNamer` reads the
 game's own `roadsIndex` and `stationNameFromRoads` reproduces the rules taken from the
-renderer bundle (`getStationName`/`formatRoadName`) — widening search radii, a
-cross-street preference scored against the line's bearing, the suffix abbreviations and
-the suffixes that can't stand alone. **How a marker looks follows the folders it is on** (`syncDerivedLooks`, run on every
+renderer bundle (`getStationName`/`formatRoadName`).
+
+**How a marker looks follows the folders it is on** (`syncDerivedLooks`, run on every
 commit *and* on load): its folder's color and the station icon on one line, black
 (`INTERCHANGE_COLOR`) and the interchange icon on two or more. Only what the mod
 assigns is traded back and forth — a color or icon that matches no folder is the
@@ -58,23 +50,16 @@ order becomes a route.
 
 Unlike auto-lines, this mod **never touches routes, tracks or trains**, and it edits
 **stations only** through that one opt-in naming path (off by default) — so none of the
-fragile route/crossover/train internals apply here. The game surfaces it needs are the
-**map** (`api.utils.getMap()`), the **floating panel** (`api.ui.addFloatingPanel`) and
-the **save/load + build hooks** (`api.hooks.*`). The internal store is read for the
-loaded save's id and the city code (to scope the board to the current game) and, only
-when station naming is on, wrapped to rename a just-placed station — all optional, so a
-missing handle just degrades gracefully.
+fragile route/crossover/train internals apply here. Every use of the internal store
+(save id, city code, the station-naming wrapper) is optional, so a missing handle just
+degrades gracefully.
 
 ## Layout
 
 DDD under `src/`, bundled by esbuild into one IIFE (`dist/index.js`, gitignored — the
-single file the game loads; `install-mod` copies it). **`main.tsx` is the entry**
-(composition root): guards `SubwayBuilderAPI`, wires deps, registers the panel, starts
-the controller, installs `SaveScopeRegistrar` and `StationNamer`. Layers: `domain/`
-(pure marker logic + geometry, no map/DOM/window), `application/` (`MarkerStore`,
-`SettingsStore`), `infrastructure/` (the only code that touches the
-map/window/storage/React), `presentation/` (the `.tsx` panel), `shared/game/`
-(typed game/map contracts).
+single file the game loads; `install-mod` copies it). `domain/` stays pure (no
+map/DOM/window); `infrastructure/` is the only layer that touches the
+map/window/storage/React.
 
 `MarkerStore` is the **single source of truth**: both the React panel and the
 imperative map badges subscribe to it, so a drag on the map and an edit in the panel
@@ -164,20 +149,15 @@ setup non-obvious:
 - **Vitest 4 transforms with oxc, not esbuild**, so the JSX pragma lives under `oxc:`
   in the config. esbuild options there are silently ignored.
 
-The map layers are covered against a fake `GlMap`; nothing in the suite needs the real
-game. To re-inject over CDP, the IIFE re-runs
-`registrar.register()` (unregister-first), so the toolbar button updates in place.
+To re-inject over CDP, the IIFE re-runs `registrar.register()` (unregister-first), so
+the toolbar button updates in place.
 
 > ### ⚠️ Quitting the game pops a blocking "save progress?" dialog — kill it, don't `quit`
 > Same trap as the sibling mods: a graceful quit blocks on a native dialog you
 > can't see over CDP, so the old instance survives and the next `npm run debug`
 > launches a **second** one (two instances fighting over the CDP port + autosave →
-> bogus symptoms). Force-kill before every launch:
-> ```bash
-> pkill -9 -f "Subway Builder.app/Contents/MacOS" ; sleep 2
-> pgrep -fl "Subway Builder.app/Contents/MacOS"   # must print nothing
-> npm run debug
-> ```
+> bogus symptoms). Force-kill the game process (and confirm none is left) before every
+> `npm run debug`.
 
 ## Pitfalls
 
@@ -220,21 +200,17 @@ game. To re-inject over CDP, the IIFE re-runs
 **Commits follow [Conventional Commits](https://www.conventionalcommits.org)** —
 release-please parses the subject to decide the next version, so an unprefixed commit
 is invisible to it. Keep the prose style; just prefix the subject: `feat:` (minor),
-`fix:`/`chore:` (patch), `docs:`/`refactor:`/`ci:` (no release). `chore:` is a
-releasable type here on purpose — `release-please-config.json` lists it under
+any other type — `fix:`, `chore:`, `docs:`, `refactor:`, `ci:`, … — (patch). Every type
+is releasable here on purpose — `release-please-config.json` lists them all under
 `changelog-sections` (unhidden), so a lone `chore:` such as a compatibility bump still
 cuts a patch release instead of being dropped.
 
 `.github/workflows/release.yml` runs release-please, which opens a release PR
 gathering those commits; merging it bumps the version, writes `CHANGELOG.md`, tags,
 and the workflow then attaches the Railyard assets (`npm run package`) to the release.
-Versions stay in step across `package.json`, `src/manifest.json` (via `extra-files`)
-and `.release-please-manifest.json` — never bump them by hand.
-
-The workflow runs on **every push to main**, where it only grooms the release PR —
-merging that PR is what tags the release and uploads the assets. The `0.0.0` baseline
-in `.release-please-manifest.json` means "nothing released yet", so the first release
-is exactly **1.0.0** rather than a bump off the version already in `package.json`.
+On every other push to main it only grooms that PR. Versions stay in step across
+`package.json`, `src/manifest.json` (via `extra-files`) and
+`.release-please-manifest.json` — never bump them by hand.
 
 > `include-component-in-tag: false` is load-bearing: the default prefixes tags with
 > the package name (`subway-builder-map-markers-v1.0.0`), and the registry only
@@ -268,9 +244,3 @@ the next minor); it's required, and `npm run package` refuses to build the asset
 the manifest would fail the registry's checks. Submission itself is an issue form
 (**Publish New Mod**) on `Subway-Builder-Modded/registry`; the registry's own
 `manifest.json` entry is generated from that form, not committed here.
-
-## Paths & env overrides
-
-The dev scripts read `SB_DATA_DIR` (game data dir; the mod lands in
-`<dir>/mods/map-markers/`), `SB_APP` (app bundle) and `SB_DEBUG_PORT` (CDP port,
-default 9222), each falling back to the platform default in `scripts/`.
