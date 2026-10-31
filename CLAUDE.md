@@ -160,9 +160,10 @@ coverage floor in `vitest.config.ts` that CI enforces. Non-obvious:
 
 **Commits follow [Conventional Commits](https://www.conventionalcommits.org)** —
 release-please parses the subject, so an unprefixed commit is invisible to it. Keep the
-prose style; just prefix: `feat:` (minor), any other type (patch). Every type is
-releasable on purpose — `release-please-config.json` lists them all, unhidden, under
-`changelog-sections`, so a lone `chore:` such as a compatibility bump still cuts a patch.
+prose style; just prefix: `feat:` (minor), `fix:`/`perf:`/`revert:`/`chore:` (patch).
+Every other type is `hidden` in `release-please-config.json`'s `changelog-sections`, so
+it never reaches the changelog or cuts a release on its own; `chore:` stays visible on
+purpose, so a lone compatibility bump still cuts a patch.
 
 `release.yml` keeps a release PR groomed on every push to main; merging it bumps the
 version, writes `CHANGELOG.md`, tags, and attaches the Railyard assets (`npm run
