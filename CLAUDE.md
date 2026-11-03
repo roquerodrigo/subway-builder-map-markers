@@ -159,23 +159,22 @@ coverage floor in `vitest.config.ts` that CI enforces. Non-obvious:
 ## Commits & releases
 
 **Commits follow [Conventional Commits](https://www.conventionalcommits.org)** —
-release-please parses the subject, so an unprefixed commit is invisible to it. Keep the
-prose style; just prefix: `feat:` (minor), any other type (patch). Every type is
-releasable on purpose — `release-please-config.json` lists them all, unhidden, under
-`changelog-sections`, so a lone `chore:` such as a compatibility bump still cuts a patch.
+Release Autopilot parses the subject, so an unprefixed commit does not move the version.
+Keep the prose style; just prefix: `feat:` (minor), any other type (patch). Whether a
+release opens at all is decided by what the commits change for the people who play with
+the mod, not by their type: a lone `ci:` or `docs:` waits, unreleased, until something
+relevant lands.
 
 `release.yml` keeps a release PR groomed on every push to main; merging it bumps the
-version, writes `CHANGELOG.md`, tags, and attaches the Railyard assets (`npm run
-package`). Versions stay in step across `package.json`, `src/manifest.json`
-(`extra-files`) and `.release-please-manifest.json` — never bump them by hand.
+version, writes `CHANGELOG.md` and tags, and the `publish` job then attaches the
+Railyard assets (`npm run package`). Versions stay in step across `package.json` and
+`src/manifest.json` (`version_files` in `.release-autopilot.yml`) — never bump them by
+hand.
 
-> `include-component-in-tag: false` is load-bearing: the default prefixes tags with the
-> package name (`subway-builder-map-markers-v1.0.0`); the registry only accepts `X.Y.Z`
-> or `vX.Y.Z`.
+> Tags are always `vX.Y.Z`; the registry only accepts `X.Y.Z` or `vX.Y.Z`.
 
-The repo has **"Allow GitHub Actions to create and approve pull requests"** on (off by
-default); without it release-please fails with `GitHub Actions is not permitted to create
-or approve pull requests`. The workflow's `permissions:` block doesn't cover this.
+The release PR is opened with the `RELEASE_TOKEN` secret so that CI runs on it; a
+release PR opened with the default `GITHUB_TOKEN` runs no checks.
 
 ## Publishing to Railyard
 

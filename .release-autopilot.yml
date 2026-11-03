@@ -1,0 +1,3 @@
+version_files:
+  - path: src/manifest.json
+    json_path: $.version
