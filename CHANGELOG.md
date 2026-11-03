@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.3.0](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.2.1...v1.3.0) (2026-11-03)
+
+This release lets folders serve as lines: markers join them from the map, lines are drawn through their stations, and new markers are named after nearby streets.
+
+### New features
+
+- A new folder opens straight away, so it can be named, coloured and filled without an extra click. ([#24](https://github.com/roquerodrigo/subway-builder-map-markers/pull/24))
+- A new marker is named after the streets around it, the way the game names a station built there. ([#22](https://github.com/roquerodrigo/subway-builder-map-markers/pull/22))
+- A marker dropped on a folder's line joins that folder, and a line can be dragged onto a marker to add it. ([#21](https://github.com/roquerodrigo/subway-builder-map-markers/pull/21))
+- The markers of each folder are joined by a dashed guide line in panel order, and a folder can be sorted along its shortest path. ([#19](https://github.com/roquerodrigo/subway-builder-map-markers/pull/19))
+- A marker can belong to several folders at once, so a station where lines meet sits on each of them. ([#19](https://github.com/roquerodrigo/subway-builder-map-markers/pull/19))
+
+### Improvements
+
+- A marker takes the colour of the folder it joins and turns black when it sits on two or more lines. Folder chips on a card open that folder. ([#23](https://github.com/roquerodrigo/subway-builder-map-markers/pull/23))
+- Folders open into a view of their own with a back button, so a long line no longer buries the other folders. ([#22](https://github.com/roquerodrigo/subway-builder-map-markers/pull/22))
+- A marker added to a folder lands between the stops it belongs between, instead of at the end of the line. ([#21](https://github.com/roquerodrigo/subway-builder-map-markers/pull/21))
+- Folder lines draw a straight platform at every station, joined by smooth curves, and stay readable on dark and light maps. ([#20](https://github.com/roquerodrigo/subway-builder-map-markers/pull/20))
+- Clicking a marker on the map opens its card in the panel. Markers step aside when the map is zoomed far out. ([#20](https://github.com/roquerodrigo/subway-builder-map-markers/pull/20))
+
 ## [1.2.1](https://github.com/roquerodrigo/subway-builder-map-markers/compare/v1.2.0...v1.2.1) (2026-07-28)
 
 
