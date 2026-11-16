@@ -28,8 +28,7 @@ function attributesOf(markup: string, tag: string): Record<string, string>[] {
   host.innerHTML = markup
 
   return [...host.querySelectorAll(tag)].map((element) =>
-    Object.fromEntries([...element.attributes].map((attribute) => [attribute.name, attribute.value])),
-  )
+    Object.fromEntries([...element.attributes].map((attribute) => [attribute.name, attribute.value])))
 }
 
 describe('iconSvgMarkup', () => {

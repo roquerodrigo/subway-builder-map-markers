@@ -46,7 +46,6 @@ const eslintConfig = defineConfig([
       '@stylistic/no-confusing-arrow': 'error',
       '@stylistic/no-extra-semi': 'error',
       '@stylistic/nonblock-statement-body-position': ['error', 'beside'],
-      '@stylistic/object-property-newline': ['error', { allowAllPropertiesOnSameLine: true }],
       '@stylistic/one-var-declaration-per-line': ['error', 'always'],
       '@stylistic/operator-linebreak': ['error', 'after'],
       // A blank line before a return separates what a function works out from what

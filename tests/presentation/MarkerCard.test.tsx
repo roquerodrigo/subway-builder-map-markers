@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { h } from '@/infrastructure/ui/react'
 import { MarkerCard } from '@/presentation/components/MarkerCard'
-import { selectedCardStyle } from '@/presentation/theme'
 
 const marker = {
   color: '#ef4444',
@@ -126,9 +125,8 @@ describe('MarkerCard', () => {
 
   it('styles a selected card inline, since the prebuilt Tailwind has no ring utilities', () => {
     const { card } = renderCard({ selected: true })
-    const expected = selectedCardStyle(marker.color)
     expect(card.style.borderColor).toBe('rgb(239, 68, 68)')
-    expect(card.style.boxShadow).toBe(expected.boxShadow)
+    expect(card.style.boxShadow).toBe('rgb(239, 68, 68) 0px 0px 0px 1px inset')
     expect(card.style.background).toBe('rgba(239, 68, 68, 0.06)')
   })
 

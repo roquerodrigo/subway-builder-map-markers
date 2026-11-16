@@ -143,8 +143,7 @@ describe('FloatingPanelRegistrar lifecycle hooks', () => {
   it('skips a hook entry that is not callable', () => {
     const hooks = { onCityLoad: vi.fn(), onGameInit: undefined, onMapReady: undefined }
     expect(() =>
-      new FloatingPanelRegistrar({ hooks, ui: createUiDouble() }, vi.fn(), vi.fn()).installLifecycleHooks(),
-    ).not.toThrow()
+      new FloatingPanelRegistrar({ hooks, ui: createUiDouble() }, vi.fn(), vi.fn()).installLifecycleHooks()).not.toThrow()
     expect(hooks.onCityLoad).toHaveBeenCalledOnce()
   })
 

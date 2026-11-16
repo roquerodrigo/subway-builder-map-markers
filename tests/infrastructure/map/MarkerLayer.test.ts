@@ -142,7 +142,7 @@ describe('MarkerLayer', () => {
 
     it('places each badge at the projected pixel of its position', () => {
       makeLayer().render([makeMarker({ position: [1, 2] })], null, OPEN)
-      expect(badgesOf(map)[0].root.style.transform).toBe('translate3d(100px, -200px, 0)')
+      expect(badgesOf(map)[0].root.style.transform).toBe('translate3d(100px, -200px, 0px)')
     })
 
     it('paints the badge with the marker color and its icon glyph', () => {
@@ -175,7 +175,7 @@ describe('MarkerLayer', () => {
       const { badge } = badgesOf(map)[0]
       expect(badge.style.transform).toBe('translate(-50%, -50%) scale(1.14)')
       expect(badge.style.zIndex).toBe('2')
-      expect(badge.style.boxShadow).toContain('#ef444466')
+      expect(badge.style.boxShadow).toContain('rgba(239, 68, 68, 0.4)')
     })
 
     it('leaves an unselected marker plain', () => {
@@ -245,7 +245,7 @@ describe('MarkerLayer', () => {
       makeLayer().render([makeMarker({ position: [1, 2] })], null, OPEN)
       map.pan(10, 5)
       map.emit('move')
-      expect(badgesOf(map)[0].root.style.transform).toBe('translate3d(110px, -195px, 0)')
+      expect(badgesOf(map)[0].root.style.transform).toBe('translate3d(110px, -195px, 0px)')
     })
 
     it('ignores a marker that has no element yet when the map moves', () => {
@@ -331,7 +331,7 @@ describe('MarkerLayer', () => {
       currentMap = replacement
       layer.render([makeMarker()], null, OPEN)
       expect(badgesOf(replacement)).toHaveLength(1)
-      expect(badgesOf(replacement)[0].root.style.transform).toBe('translate3d(100px, -200px, 0)')
+      expect(badgesOf(replacement)[0].root.style.transform).toBe('translate3d(100px, -200px, 0px)')
     })
 
     it('moves the move listener onto the new map', () => {
@@ -396,7 +396,7 @@ describe('MarkerLayer', () => {
       const { badge, root } = renderDraggable()
       pressOn(badge, { clientX: 120, clientY: 10 })
       movePointerTo(DROP_CLIENT_X, DROP_CLIENT_Y)
-      expect(root.style.transform).toBe('translate3d(500px, 300px, 0)')
+      expect(root.style.transform).toBe('translate3d(500px, 300px, 0px)')
     })
 
     it('reports the final position when the drag ends', () => {
@@ -452,7 +452,7 @@ describe('MarkerLayer', () => {
       movePointerTo(DROP_CLIENT_X, DROP_CLIENT_Y)
       map.pan(50, 50)
       map.emit('move')
-      expect(root.style.transform).toBe('translate3d(500px, 300px, 0)')
+      expect(root.style.transform).toBe('translate3d(500px, 300px, 0px)')
     })
 
     it('leaves the dragged badge where the pointer is when the store re-renders', () => {
@@ -460,7 +460,7 @@ describe('MarkerLayer', () => {
       pressOn(badge, { clientX: 120, clientY: 10 })
       movePointerTo(DROP_CLIENT_X, DROP_CLIENT_Y)
       layer.render([makeMarker({ color: '#22c55e', position: [5, -3] })], 'alpha', OPEN)
-      expect(root.style.transform).toBe('translate3d(500px, 300px, 0)')
+      expect(root.style.transform).toBe('translate3d(500px, 300px, 0px)')
       expect(badge.style.background).toBe(asCssColor('#22c55e'))
     })
 
@@ -470,7 +470,7 @@ describe('MarkerLayer', () => {
       movePointerTo(DROP_CLIENT_X, DROP_CLIENT_Y)
       releasePointer()
       map.emit('move')
-      expect(root.style.transform).toBe('translate3d(100px, -200px, 0)')
+      expect(root.style.transform).toBe('translate3d(100px, -200px, 0px)')
     })
   })
 
@@ -623,7 +623,7 @@ describe('MarkerLayer', () => {
       expect(snapPosition).toHaveBeenCalledWith('alpha', [5, -3])
       expect(callbacks.onDragMove).toHaveBeenCalledWith('alpha', [6, -3])
       expect(callbacks.onDragEnd).toHaveBeenCalledWith('alpha', [6, -3])
-      expect(root.style.transform).toBe('translate3d(600px, 300px, 0)')
+      expect(root.style.transform).toBe('translate3d(600px, 300px, 0px)')
     })
 
     it('uses the raw position when no snap is wired up', () => {

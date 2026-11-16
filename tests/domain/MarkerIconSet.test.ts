@@ -52,9 +52,7 @@ describe('MARKER_ICONS', () => {
   it('keeps every numeric attribute within the 24x24 viewBox range', () => {
     const numericAttributes = MARKER_ICONS.flatMap((icon) =>
       icon.elements.flatMap((element) =>
-        Object.values(element.attrs).filter((value): value is number => typeof value === 'number'),
-      ),
-    )
+        Object.values(element.attrs).filter((value): value is number => typeof value === 'number')))
     for (const value of numericAttributes) {
       expect(value).toBeGreaterThanOrEqual(0)
       expect(value).toBeLessThanOrEqual(24)

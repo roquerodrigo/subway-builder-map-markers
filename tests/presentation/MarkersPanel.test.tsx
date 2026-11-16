@@ -590,7 +590,7 @@ describe('MarkersPanel reordering feedback', () => {
     renderPanel([createMarker('a', 'Central'), createMarker('b', 'Sé')])
     startDragging('Reorder marker', 0)
     dragOver(cards()[1], 90)
-    expect(cards()[1].style.boxShadow).toContain('0 3px')
+    expect(cards()[1].style.boxShadow).toContain('0px 3px')
   })
 
   it('clears the line once the pointer leaves', () => {

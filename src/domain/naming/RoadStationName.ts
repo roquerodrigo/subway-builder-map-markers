@@ -50,8 +50,22 @@ const ABBREVIATIONS: Record<string, string> = {
 const BANNED = new Set(['Av', 'Blvd', 'Dr', 'Hts', 'Hwy', 'Ln', 'Pkwy', 'Pl', 'Rd', 'Sq', 'St'])
 // Kept when it opens a two-word name ("West Side"), dropped anywhere else.
 const DIRECTIONS = new Set([
-  'e', 'east', 'n', 'ne', 'north', 'northeast', 'northwest', 'nw',
-  's', 'se', 'south', 'southeast', 'southwest', 'sw', 'w', 'west',
+  'e',
+  'east',
+  'n',
+  'ne',
+  'north',
+  'northeast',
+  'northwest',
+  'nw',
+  's',
+  'se',
+  'south',
+  'southeast',
+  'southwest',
+  'sw',
+  'w',
+  'west',
 ])
 
 // A road the search turned up: its name and the shape it runs in.
