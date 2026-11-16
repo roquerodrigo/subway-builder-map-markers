@@ -30,3 +30,12 @@ updates:
       prefix: "deps"
       prefix-development: "deps-dev"
       include: "scope"
+    ignore:
+      # typescript-eslint does not support TypeScript 7 yet
+      - dependency-name: "typescript"
+        versions: [">= 7"]
+      # eslint-plugin-react and eslint-plugin-jsx-a11y do not support ESLint 10 yet
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
