@@ -54,7 +54,11 @@ the map and an edit in the panel can't diverge.
 
 `docs/game-internals.md` documents the game surfaces this mod depends on — **read it
 first**; `docs/inspecting-the-game.md` covers driving the live game over CDP.
-**TypeScript is pinned to 5.9** (not 7) so typescript-eslint's type-aware rules can run.
+**TypeScript is held on 6.0** (not 7) so typescript-eslint's type-aware rules can run;
+`.github/dependabot.yml` ignores `typescript >= 7`. **ESLint is held on 9** the same way,
+because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` do not support ESLint 10 yet.
+React 19 dropped the global `JSX` namespace that the classic `h` factory resolves element
+types through; `src/infrastructure/ui/jsx.d.ts` maps it back to `React.JSX`.
 
 **Imports use the `@/*` alias for anything under `src/`**, never `../../` — tests too,
 except for a helper sitting next to them. Declared in `tsconfig.json` (`paths`), which
@@ -111,8 +115,11 @@ coverage floor in `vitest.config.ts` that CI enforces. Non-obvious:
 
 - **React comes from the host**, read off `window.SubwayBuilderAPI` at module-init, so
   `tests/setup.ts` installs it *before* any mod module is imported — hence `setupFiles`.
-- **Vitest 4 transforms with oxc, not esbuild**: the JSX pragma lives under `oxc:`;
+- **Vitest transforms with oxc, not esbuild**: the JSX pragma lives under `oxc:`;
   esbuild options there are silently ignored.
+- **jsdom serializes inline styles the CSSOM way**: a style read back comes out as
+  `rgb(239, 68, 68) 0px 0px 0px 1px inset` or `translate3d(1px, 2px, 0px)`, not as
+  written, so assertions use that form.
 
 > ### ⚠️ Quitting the game pops a blocking "save progress?" dialog — kill it, don't `quit`
 > A graceful quit blocks on a native dialog you can't see over CDP, so the old instance
